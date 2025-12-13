@@ -27,5 +27,6 @@ fn main() {
     let mut scanner = Scanner::new();
 
     scanner.add_filter(filter);
-    scanner.scan_folder(&storage, "/home/roothunter/Documents");
+    scanner.scan_folder("/home/roothunter/Documents");
+    scanner.save_documents(&storage);
 }
