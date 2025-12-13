@@ -1,12 +1,10 @@
-mod engine;
-use engine::storage::StorageEngine;
-use rsearch::entities::document;
+use rsearch::{engine::{scanner::{Scanner, ScannerFilter}, storage::StorageEngine}, entities::document::Document};
 
 fn main() {
     let storage = StorageEngine::new();
     storage.initialize().expect("Failed to initialize storage engine");
 
-    let mut doc = document::Document::new();
+    let mut doc = Document::new();
 
     doc.set_filename("file.txt".to_string());
     doc.set_extension("txt".to_string());
@@ -21,4 +19,14 @@ fn main() {
     } else {
         println!("Document saved successfully.");
     }
+
+    let mut filter = ScannerFilter::new();
+    filter.set_case_sensitive(false);
+    filter.set_dir_contains(".gradle");
+
+    let mut scanner = Scanner::new();
+
+    scanner.add_filter(filter);
+
+    scanner.scan_folder("/home/roothunter/Documents");
 }
