@@ -12,3 +12,4 @@ tracing = "0.1.43"
 tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
 tracing-appender = "0.2"
 chrono = "0.4"  # se vuoi timestamp custom
+pdfium-render = "0.8.37"

@@ -1,57 +1,17 @@
 use std::thread;
 
-use rsearch::engine::{
-    Engine,
-    scanner::{FiltersMode, filters::Filter},
-};
+use rsearch::{engine::{
+    Engine, extractor::formats::pdf::read_pdf_text, scanner::{FiltersMode, filters::Filter}
+}, init_logging};
 
 use tracing::{error, info};
-use tracing_appender::rolling::{RollingFileAppender, Rotation};
-use tracing_subscriber::{
-    EnvFilter,
-    fmt::{self, format},
-    layer::SubscriberExt,
-    util::SubscriberInitExt,
-};
-
-pub fn init_logging() {
-    // file logger (NO ANSI)
-    let file_appender = RollingFileAppender::new(Rotation::DAILY, "logs", "rsearch");
-
-    let file_layer = fmt::layer()
-        .with_ansi(false)
-        .event_format(
-            format()
-                .with_level(true)
-                .with_target(true)
-                .with_thread_ids(false)
-                .with_thread_names(false),
-        )
-        .with_writer(file_appender);
-
-    // console logger (ANSI OK)
-    let stdout_layer = fmt::layer()
-        .with_ansi(true)
-        .event_format(
-            format()
-                .with_level(true)
-                .with_target(true) // 🔥 QUI
-                .with_thread_ids(false)
-                .with_thread_names(false),
-        )
-        .with_writer(std::io::stdout);
-
-    let filter = EnvFilter::from_default_env().add_directive("rsearch=info".parse().unwrap());
-
-    tracing_subscriber::registry()
-        .with(filter)
-        .with(stdout_layer)
-        .with(file_layer)
-        .init();
-}
 
 fn main() {
     init_logging();
+
+    let t = read_pdf_text("/home/roothunter/App/NuSMV-2.6.0-Linux/share/nusmv/doc/tutorial.pdf").unwrap();
+
+    info!("Extracted PDF Text:\n{}", t);
 
     let engine = Engine::new();
     let mut storage = engine.storage_engine;

@@ -1,3 +1,5 @@
+pub mod formats;
+
 use std::fs;
 
 use crate::entities::document::Document;
