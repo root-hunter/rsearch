@@ -116,7 +116,6 @@ impl Extractor {
                 last_flush = Instant::now();
             }
 
-            // 🔥 flush per tempo
             if !buffer.is_empty() && last_flush.elapsed() >= FLUSH_INTERVAL {
                 Self::flush_buffer(conn, &mut buffer)?;
                 last_flush = Instant::now();
