@@ -29,7 +29,7 @@ impl StorageEngine {
                 id INTEGER PRIMARY KEY,
                 path TEXT NOT NULL UNIQUE,
                 filename TEXT NOT NULL,
-                extension TEXT NOT NULL
+                extension TEXT
             )",
             [],
         ).map_err(StorageError::InitializationError)?;

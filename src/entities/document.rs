@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use crate::engine::utils;
 
 #[derive(Debug)]
@@ -9,9 +11,10 @@ pub enum DocumentError {
 
 #[derive(Debug)]
 pub struct Document {
+    id: Option<i64>,
     path: String,
     filename: String,
-    extension: String,
+    extension: Option<String>,
     content: String,
     description: String,
 }
@@ -19,9 +22,39 @@ pub struct Document {
 impl Document {
     pub fn new() -> Self {
         Document {
+            id: None,
             path: String::new(),
             filename: String::new(),
-            extension: String::new(),
+            extension: None,
+            content: String::new(),
+            description: String::new(),
+        }
+    }
+
+    pub fn from_path(path: &Path) -> Self {
+        let filename = path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("")
+            .to_string();
+
+        let extension = path
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .unwrap_or("")
+            .to_string();
+
+        let extension = if extension.is_empty() {
+            None
+        } else {
+            Some(extension)
+        };
+
+        Document {
+            id: None,
+            path: path.to_string_lossy().to_string(),
+            filename,
+            extension,
             content: String::new(),
             description: String::new(),
         }
@@ -43,12 +76,12 @@ impl Document {
         &self.filename
     }
 
-    pub fn set_extension(&mut self, extension: String) {
+    pub fn set_extension(&mut self, extension: Option<String>) {
         self.extension = extension;
     }
 
-    pub fn get_extension(&self) -> &str {
-        &self.extension
+    pub fn get_extension(&self) -> Option<&str> {
+        self.extension.as_deref()
     }
 
     pub fn set_content(&mut self, content: String) {
@@ -67,7 +100,15 @@ impl Document {
         &self.description
     }
 
-    pub fn save(&self, conn: &rusqlite::Connection) -> Result<(), DocumentError> {
+    pub fn get_id(&self) -> Option<i64> {
+        self.id
+    }
+
+    pub fn set_id(&mut self, id: i64) {
+        self.id = Some(id);
+    }
+
+    pub fn save(&mut self, conn: &rusqlite::Connection) -> Result<(), DocumentError> {
         conn.execute(
             "INSERT INTO documents (path, filename, extension) VALUES (?1, ?2, ?3)",
             rusqlite::params![self.path, self.filename, self.extension],
@@ -89,11 +130,13 @@ impl Document {
         )
         .map_err(DocumentError::DatabaseError)?;
 
+        self.set_id(document_id);
+
         Ok(())
     }
 
     pub fn update_index(&self, conn: &rusqlite::Connection) -> Result<(), DocumentError> {
-        let document_id: i64 = self.get_id_by_path(conn)?;
+        let document_id: i64 = self._get_id(conn)?;
 
         conn.execute(
             "UPDATE index_documents SET content = ?1, description = ?2 WHERE document_id = ?3",
@@ -121,7 +164,7 @@ impl Document {
     }
 
     pub fn delete(&self, conn: &rusqlite::Connection) -> Result<(), DocumentError> {
-        let document_id: i64 = self.get_id_by_path(conn)?;
+        let document_id: i64 = self._get_id(conn)?;
 
         conn.execute(
             "DELETE FROM index_documents WHERE document_id = ?1",
@@ -152,5 +195,13 @@ impl Document {
             })?;
 
         Ok(document_id)
+    }
+
+    pub fn _get_id(&self, conn: &rusqlite::Connection) -> Result<i64, DocumentError> {
+        if let Some(id) = self.id {
+            return Ok(id);
+        } else {
+            return self.get_id_by_path(conn);
+        }
     }
 }

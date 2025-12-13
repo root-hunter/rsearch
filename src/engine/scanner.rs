@@ -2,6 +2,8 @@ use std::path::Path;
 
 use regex::Regex;
 
+use crate::{engine::storage::StorageEngine, entities::document::Document};
+
 pub enum ScannerError {
     IoError(std::io::Error),
     FilterError(ScannerFilterError),
@@ -157,18 +159,26 @@ impl Scanner {
         self.filters.push(filter);
     }
 
-    pub fn scan_folder(&self, path: &str) {
+    pub fn scan_folder(&self, storage: &StorageEngine, path: &str) {
         // Implementation for scanning a folder
         println!("Scanning folder: {}", path);
 
         let walker = walkdir::WalkDir::new(path);
+        let conn = storage.get_connection();
 
         for entry in walker.into_iter().filter_map(|e| e.ok()) {
             let file_path = entry.path();
 
             if self.check_filters(file_path) {
                 println!("Found file: {:?}", file_path);
-                // Here you would add logic to process the file
+
+                let mut document = Document::from_path(file_path);
+
+                document.save(conn).unwrap_or_else(|e| {
+                    eprintln!("Error saving document {:?}: {:?}", file_path, e);
+                });
+
+                println!("Document saved: {:?}", document);
             }
         }
     }

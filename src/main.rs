@@ -7,7 +7,7 @@ fn main() {
     let mut doc = Document::new();
 
     doc.set_filename("file.txt".to_string());
-    doc.set_extension("txt".to_string());
+    doc.set_extension(Some("txt".to_string()));
     doc.set_content("This is a test document.".to_string());
     doc.set_description("A simple test document for rsearch.".to_string());
     doc.set_path("/test/file.txt".to_string());
@@ -22,11 +22,10 @@ fn main() {
 
     let mut filter = ScannerFilter::new();
     filter.set_case_sensitive(false);
-    filter.set_dir_contains(".gradle");
+    filter.set_filename_contains("report");
 
     let mut scanner = Scanner::new();
 
     scanner.add_filter(filter);
-
-    scanner.scan_folder("/home/roothunter/Documents");
+    scanner.scan_folder(&storage, "/home/roothunter/Documents");
 }
