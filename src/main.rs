@@ -1,4 +1,4 @@
-use rsearch::{engine::{scanner::{Scanner, filters::Filter}, storage::StorageEngine}, entities::document::Document};
+use rsearch::{engine::{scanner::{Scanner, ScannerFilterMode, filters::Filter}, storage::StorageEngine}, entities::document::Document};
 
 fn main() {
     let storage = StorageEngine::new();
@@ -20,13 +20,23 @@ fn main() {
         println!("Document saved successfully.");
     }
 
-    let mut filter = Filter::new();
-    filter.set_case_sensitive(false);
-    filter.set_filename_contains("report");
+    let mut filter1 = Filter::new();
+    filter1.set_case_sensitive(false);
+    filter1.set_filename_contains("report");
+
+
+    let mut filter2 = Filter::new();
+    filter2.set_case_sensitive(false);
+    filter2.set_filename_contains("bevy");
+
 
     let mut scanner = Scanner::new();
 
-    scanner.add_filter(filter);
+    scanner.set_filter_mode(ScannerFilterMode::And);
+
+    scanner.add_filter(filter1);
+    scanner.add_filter(filter2);
+
     scanner.scan_folder("/home/roothunter/Documents");
     scanner.save_documents(&storage);
 }

@@ -10,7 +10,14 @@ pub enum ScannerError {
 }
 
 #[derive(Debug)]
+pub enum ScannerFilterMode {
+    And,
+    Or,
+}
+
+#[derive(Debug)]
 pub struct Scanner {
+    filter_mode: ScannerFilterMode,
     documents: Vec<Document>,
     filters: Vec<Filter>,
 }
@@ -18,6 +25,7 @@ pub struct Scanner {
 impl Scanner {
     pub fn new() -> Self {
         Scanner {
+            filter_mode: ScannerFilterMode::And,
             documents: Vec::new(),
             filters: Vec::new(),
         }
@@ -25,11 +33,28 @@ impl Scanner {
 
     pub fn check_filters(&self, path: &Path) -> bool {
         for filter in &self.filters {
-            if !filter.check(path) {
-                return false;
+            match self.filter_mode {
+                ScannerFilterMode::And => {
+                    if !filter.check(path) {
+                        return false;
+                    }
+                }
+                ScannerFilterMode::Or => {
+                    if filter.check(path) {
+                        return true;
+                    }
+                }
             }
         }
-        true
+
+        match self.filter_mode {
+            ScannerFilterMode::And => true,
+            ScannerFilterMode::Or => false,
+        }
+    }
+
+    pub fn set_filter_mode(&mut self, mode: ScannerFilterMode) {
+        self.filter_mode = mode;
     }
 
     pub fn add_filter(&mut self, filter: Filter) {
