@@ -7,9 +7,7 @@ pub enum RSearchError {
     EntityError(entities::EntityError),
 }
 
-use std::env;
 
-use once_cell::sync::Lazy;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::{
     EnvFilter,

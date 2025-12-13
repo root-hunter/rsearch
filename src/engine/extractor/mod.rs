@@ -12,7 +12,7 @@ use crate::{
 };
 use crossbeam::channel;
 use once_cell::sync::Lazy;
-use tracing::{error, info, warn};
+use tracing::info;
 
 const LOG_TARGET: &str = "extractor";
 
