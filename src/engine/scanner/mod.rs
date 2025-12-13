@@ -34,6 +34,10 @@ impl Scanner {
     }
 
     pub fn check_filters(&self, path: &Path) -> bool {
+        if self.filters.is_empty() {
+            return true;
+        }
+
         for filter in &self.filters {
             match self.filter_mode {
                 ScannerFilterMode::And => {
