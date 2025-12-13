@@ -14,7 +14,7 @@ install-pdfium:
 	rm -rf vendor/pdfium
 	mkdir -p vendor/pdfium
 	cd vendor/pdfium && \
-	wget https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F7568/pdfium-$(PDFIUM_ARCH).tgz && \
+	wget https://github.com/bblanchon/pdfium-binaries/releases/latest/download/pdfium-$(PDFIUM_ARCH).tgz && \
 	tar -xvzf pdfium-$(PDFIUM_ARCH).tgz && \
 	rm pdfium-$(PDFIUM_ARCH).tgz
 
