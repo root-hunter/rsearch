@@ -1,10 +1,12 @@
 run:
 	rm -rf ./storage.db
-	RUST_LOG=info RUST_BACKTRACE=1 cargo run
+	cargo build
+	RUST_LOG=info RUST_BACKTRACE=1 ./target/debug/rsearch
 
 run-release:
 	rm -rf ./storage.db
-	cargo run --release
+	cargo build --release
+	RUST_LOG=info RUST_BACKTRACE=1 ./target/release/rsearch
 
 PDFIUM_ARCH=linux-x64
 
