@@ -11,13 +11,13 @@ pub enum ScannerError {
     FilterError(FilterError),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum FiltersMode {
     And,
     Or,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Scanner {
     filters: Vec<Filter>,
     filters_mode: FiltersMode,

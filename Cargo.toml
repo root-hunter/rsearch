@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+crossbeam = "0.8.4"
 regex = "1.12.2"
 rusqlite = "0.37.0"
 walkdir = "2.5.0"

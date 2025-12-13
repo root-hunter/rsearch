@@ -7,7 +7,7 @@ pub enum FilterError {
     InvalidRegex(regex::Error),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StringCondition {
     substring: String,
     case_sensitive: bool,
@@ -32,7 +32,7 @@ impl StringCondition {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Filter {
     case_sensitive: bool,
     filename_contains: Option<StringCondition>,

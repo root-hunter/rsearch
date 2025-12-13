@@ -1,0 +1,37 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36" version="27.0.1">
+  <diagram name="Page-1" id="74b105a0-9070-1c63-61bc-23e55f88626e">
+    <mxGraphModel dx="1678" dy="896" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1.5" pageWidth="1169" pageHeight="826" background="none" math="0" shadow="0">
+      <root>
+        <mxCell id="0" style=";html=1;" />
+        <mxCell id="1" style=";html=1;" parent="0" />
+        <mxCell id="10b056a9c633e61c-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;jettySize=auto;orthogonalLoop=1;strokeWidth=2;startArrow=none;startFill=0;" parent="1" source="10b056a9c633e61c-1" target="10b056a9c633e61c-2" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="10b056a9c633e61c-1" value="Extractor" style="strokeWidth=2;dashed=0;align=center;fontSize=12;shape=mxgraph.eip.message_translator;fillColor=#c0f5a9;verticalLabelPosition=bottom;verticalAlign=top;" parent="1" vertex="1">
+          <mxGeometry x="382" y="590" width="150" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="10b056a9c633e61c-19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;jettySize=auto;orthogonalLoop=1;strokeWidth=2;startArrow=none;startFill=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="10b056a9c633e61c-2" target="10b056a9c633e61c-15" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+            <mxPoint x="922" y="440" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="10b056a9c633e61c-2" value="StorageEngine" style="strokeWidth=2;dashed=0;align=center;fontSize=12;fillColor=#c0f5a9;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.eip.recipient_list;" parent="1" vertex="1">
+          <mxGeometry x="632" y="590" width="150" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="10b056a9c633e61c-17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;jettySize=auto;orthogonalLoop=1;strokeWidth=2;startArrow=none;startFill=0;" parent="1" source="10b056a9c633e61c-4" target="10b056a9c633e61c-1" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="10b056a9c633e61c-4" value="Scanner" style="strokeWidth=2;dashed=0;align=center;fontSize=12;shape=rect;verticalLabelPosition=bottom;verticalAlign=top;fillColor=#c0f5a9" parent="1" vertex="1">
+          <mxGeometry x="100" y="590" width="150" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="10b056a9c633e61c-5" value="" style="strokeWidth=1;dashed=0;align=center;fontSize=8;shape=rect;fillColor=#ffffff;strokeColor=#000000;" parent="10b056a9c633e61c-4" vertex="1">
+          <mxGeometry x="85" y="25" width="40" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="10b056a9c633e61c-15" value="Database" style="strokeWidth=2;dashed=0;align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.eip.message_store;fillColor=#c0f5a9" parent="1" vertex="1">
+          <mxGeometry x="880" y="590" width="150" height="90" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
