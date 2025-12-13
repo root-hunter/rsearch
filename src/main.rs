@@ -1,7 +1,7 @@
 use rsearch::{engine::{scanner::{Scanner, ScannerFilterMode, filters::Filter}, storage::StorageEngine}, entities::document::Document};
 
 fn main() {
-    let storage = StorageEngine::new();
+    let mut storage = StorageEngine::new();
     storage.initialize().expect("Failed to initialize storage engine");
 
     let mut doc = Document::new();
@@ -29,14 +29,17 @@ fn main() {
     filter2.set_case_sensitive(false);
     filter2.set_filename_contains("bevy");
 
-
     let mut scanner = Scanner::new();
 
-    scanner.set_filter_mode(ScannerFilterMode::And);
+    scanner.set_filter_mode(ScannerFilterMode::Or);
 
     scanner.add_filter(filter1);
     scanner.add_filter(filter2);
 
     scanner.scan_folder("/home/roothunter/Documents");
-    scanner.save_documents(&storage);
+    if let Err(e) = scanner.save_documents(&mut storage) {
+        eprintln!("Error saving scanned documents: {:?}", e);
+    } else {
+        println!("Scanned documents saved successfully.");
+    }
 }

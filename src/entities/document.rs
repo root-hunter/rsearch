@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::engine::utils;
+use crate::{engine::utils, entities::document};
 
 #[derive(Debug)]
 pub enum DocumentError {
@@ -9,7 +9,7 @@ pub enum DocumentError {
     DatabaseError(rusqlite::Error),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Document {
     id: Option<i64>,
     path: String,
@@ -203,5 +203,43 @@ impl Document {
         } else {
             return self.get_id_by_path(conn);
         }
+    }
+
+    pub fn save_bulk(conn: &mut rusqlite::Connection, documents: Vec<Document>) -> Result<(), DocumentError> {
+        let tx = conn.transaction().map_err(DocumentError::DatabaseError)?;
+        let count = documents.len();
+
+        for mut document in documents {
+            tx.execute(
+                "INSERT INTO documents (path, filename, extension) VALUES (?1, ?2, ?3)",
+                rusqlite::params![document.path, document.filename, document.extension],
+            )
+            .map_err(|err| {
+                if let rusqlite::Error::SqliteFailure(ref err_code, _) = err {
+                    if err_code.code == rusqlite::ErrorCode::ConstraintViolation {
+                        return DocumentError::ConstraintViolation;
+                    }
+                }
+                DocumentError::DatabaseError(err)
+            })?;
+
+            let document_id = tx.last_insert_rowid();
+            document.set_id(document_id);
+
+            tx.execute(
+                "INSERT INTO index_documents (document_id, content, description) VALUES (?1, ?2, ?3)",
+                rusqlite::params![document_id, document.content, document.description],
+            )
+            .map_err(DocumentError::DatabaseError)?;
+
+            println!("Saved document: {}", document.path);
+        }
+
+        tx.commit().map_err(DocumentError::DatabaseError)?;
+
+        println!("All documents saved successfully.");
+        println!("Total documents saved: {}", count);
+
+        Ok(())
     }
 }

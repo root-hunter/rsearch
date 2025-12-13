@@ -2,6 +2,7 @@ use std::path::Path;
 
 use regex::Regex;
 
+#[derive(Debug)]
 pub enum FilterError {
     InvalidRegex(regex::Error),
 }

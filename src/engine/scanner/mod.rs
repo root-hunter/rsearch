@@ -4,7 +4,9 @@ use std::path::Path;
 
 use crate::{engine::{scanner::filters::{Filter, FilterError}, storage::StorageEngine}, entities::document::Document};
 
+#[derive(Debug)]
 pub enum ScannerError {
+    SaveDocuments,
     IoError(std::io::Error),
     FilterError(FilterError),
 }
@@ -80,16 +82,11 @@ impl Scanner {
         }
     }
 
-    pub fn save_documents(&mut self, storage: &StorageEngine) {
-        let conn = storage.get_connection();
+    pub fn save_documents(&mut self, storage: &mut StorageEngine) -> Result<(), ScannerError> {
+        let conn = storage.get_connection_mut();
 
-        for document in &mut self.documents {
-            document.save(conn).unwrap_or_else(|e| {
-                eprintln!("Error saving document {:?}: {:?}", document.get_path(), e);
-            });
-            println!("Document saved: {:?}", document);
-        }
+        Document::save_bulk(conn, self.documents.clone()).map_err(|_| ScannerError::SaveDocuments)?;
 
-        println!("Saved {} documents.", self.documents.len());
+        Ok(())
     }
 }

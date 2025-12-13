@@ -23,6 +23,10 @@ impl StorageEngine {
         &self.conn
     }
 
+    pub fn get_connection_mut(&mut self) -> &mut Connection {
+        &mut self.conn
+    }
+
     pub fn initialize(&self) -> Result<(), StorageError> {
         self.conn.execute(
             "CREATE TABLE IF NOT EXISTS documents (
