@@ -2,7 +2,7 @@ pub mod filters;
 
 use std::path::Path;
 
-use tracing::info;
+use tracing::{error, info};
 
 use crate::{engine::scanner::filters::{Filter, FilterError}, entities::document::Document};
 
@@ -10,7 +10,6 @@ const LOG_TARGET: &str = "scanner";
 
 #[derive(Debug)]
 pub enum ScannerError {
-    SaveDocuments,
     IoError(std::io::Error),
     FilterError(FilterError),
 }
@@ -25,7 +24,6 @@ pub enum FiltersMode {
 pub struct Scanner {
     filters: Vec<Filter>,
     filters_mode: FiltersMode,
-    documents: Vec<Document>,
     channel_tx: Option<crossbeam::channel::Sender<Document>>,
 }
 
@@ -33,7 +31,6 @@ impl Scanner {
     pub fn new() -> Self {
         Scanner {
             filters_mode: FiltersMode::And,
-            documents: Vec::new(),
             filters: Vec::new(),
             channel_tx: None,
         }
@@ -77,9 +74,12 @@ impl Scanner {
         self.filters.push(filter);
     }
 
-    fn add_document(&mut self, document: Document) {
-        self.channel_tx.as_ref().map(|tx| tx.send(document.clone()).unwrap());
-        //self.documents.push(document);
+    fn process_document(&mut self, document: Document) {
+        self.channel_tx.as_ref().map(|tx| {
+            if let Err(e) = tx.send(document.clone()) {
+                error!(target: LOG_TARGET, "Failed to send document to extractor: {:?}", e);
+            }
+        });
     }
 
     pub fn scan_folder(&mut self, path: &str) {
@@ -93,14 +93,8 @@ impl Scanner {
             if self.check_filters(file_path) {
                 info!(target: LOG_TARGET, "Found file: {:?}", file_path);
 
-                self.add_document(Document::from_path(file_path));
+                self.process_document(Document::from_path(file_path));
             }
         }
-    }
-
-    pub fn save_documents(&mut self, conn: &mut rusqlite::Connection) -> Result<(), ScannerError> {
-        Document::save_bulk(conn, self.documents.clone()).map_err(|_| ScannerError::SaveDocuments)?;
-
-        Ok(())
     }
 }

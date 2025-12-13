@@ -20,18 +20,18 @@ use tracing::{error, info};
 const LOG_TARGET: &str = "extractor";
 
 static EXTRACTOR_INSERT_BATCH_SIZE: Lazy<usize> = Lazy::new(|| {
-    env::var("BATCH_SIZE")
+    env::var("EXTRACTOR_INSERT_BATCH_SIZE")
         .ok()
         .and_then(|s| s.parse().ok())
         .unwrap_or(100)
 });
 
 static EXTRACTOR_FLUSH_INTERVAL: Lazy<Duration> = Lazy::new(|| {
-    env::var("FLUSH_INTERVAL")
+    env::var("EXTRACTOR_FLUSH_INTERVAL")
         .ok()
         .and_then(|s| s.parse::<u64>().ok()) // prova a parsare u64
-        .map(Duration::from_secs)
-        .unwrap_or(Duration::from_secs(5))
+        .map(Duration::from_millis)
+        .unwrap_or(Duration::from_millis(5000))
 });
 
 #[derive(Debug)]
