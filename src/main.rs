@@ -2,7 +2,7 @@ use std::thread;
 
 use rsearch::{
     engine::{
-        Engine, extractor::Extractor, scanner::{FiltersMode, Scanner, filters::Filter}, storage::{STORAGE_DATABASE_PATH, StorageEngine}
+        extractor::Extractor, scanner::{FiltersMode, Scanner, filters::Filter}, storage::{STORAGE_DATABASE_PATH, StorageEngine}
     },
     init_logging,
 };

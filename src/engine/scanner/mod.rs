@@ -2,7 +2,6 @@ pub mod filters;
 
 use std::path::Path;
 
-use crossbeam::channel;
 use tracing::{error, info};
 
 use crate::{engine::scanner::filters::{Filter, FilterError}, entities::document::Document};

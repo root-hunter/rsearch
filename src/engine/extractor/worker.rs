@@ -10,7 +10,7 @@ use crate::{
     },
     entities::document::Document,
 };
-use crossbeam::{channel, thread};
+use crossbeam::channel;
 use tracing::{error, info};
 
 const LOG_TARGET: &str = "extractor_worker";
