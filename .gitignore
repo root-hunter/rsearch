@@ -1,5 +1,7 @@
 /target
 /samples
-*.db
 logs
 vendor
+*.db
+*.db-wal
+*.db-shm
