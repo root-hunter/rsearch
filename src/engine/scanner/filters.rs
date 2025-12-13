@@ -2,8 +2,6 @@ use std::path::Path;
 
 use regex::Regex;
 
-use crate::{engine::storage::StorageEngine, entities::document::Document};
-
 pub enum ScannerError {
     IoError(std::io::Error),
     FilterError(ScannerFilterError),
@@ -14,14 +12,14 @@ pub enum ScannerFilterError {
 }
 
 #[derive(Debug)]
-pub struct ScannerFilterStringCondition {
+pub struct StringCondition {
     substring: String,
     case_sensitive: bool,
 }
 
-impl ScannerFilterStringCondition {
+impl StringCondition {
     pub fn new(substring: &str, case_sensitive: bool) -> Self {
-        ScannerFilterStringCondition {
+        StringCondition {
             substring: substring.to_string(),
             case_sensitive,
         }
@@ -39,20 +37,20 @@ impl ScannerFilterStringCondition {
 }
 
 #[derive(Debug)]
-pub struct ScannerFilter {
+pub struct Filter {
     case_sensitive: bool,
-    filename_contains: Option<ScannerFilterStringCondition>,
-    filename_not_contains: Option<ScannerFilterStringCondition>,
-    dir_contains: Option<ScannerFilterStringCondition>,
-    dir_not_contains: Option<ScannerFilterStringCondition>,
+    filename_contains: Option<StringCondition>,
+    filename_not_contains: Option<StringCondition>,
+    dir_contains: Option<StringCondition>,
+    dir_not_contains: Option<StringCondition>,
     extension_is: Option<String>,
     extension_is_not: Option<String>,
     filename_regex: Option<Regex>,
 }
 
-impl ScannerFilter {
+impl Filter {
     pub fn new() -> Self {
-        ScannerFilter {
+        Filter {
             case_sensitive: true,
             filename_contains: None,
             filename_not_contains: None,
@@ -65,28 +63,28 @@ impl ScannerFilter {
     }
 
     pub fn set_filename_contains(&mut self, substring: &str) {
-        self.filename_contains = Some(ScannerFilterStringCondition {
+        self.filename_contains = Some(StringCondition {
             substring: substring.to_string(),
             case_sensitive: self.case_sensitive,
         });
     }
 
     pub fn set_filename_not_contains(&mut self, substring: &str) {
-        self.filename_not_contains = Some(ScannerFilterStringCondition {
+        self.filename_not_contains = Some(StringCondition {
             substring: substring.to_string(),
             case_sensitive: self.case_sensitive,
         });
     }
 
     pub fn set_dir_contains(&mut self, substring: &str) {
-        self.dir_contains = Some(ScannerFilterStringCondition {
+        self.dir_contains = Some(StringCondition {
             substring: substring.to_string(),
             case_sensitive: self.case_sensitive,
         });
     }
 
     pub fn set_dir_not_contains(&mut self, substring: &str) {
-        self.dir_not_contains = Some(ScannerFilterStringCondition {
+        self.dir_not_contains = Some(StringCondition {
             substring: substring.to_string(),
             case_sensitive: self.case_sensitive,
         });
@@ -155,55 +153,5 @@ impl ScannerFilter {
         }
 
         matches
-    }
-}
-
-#[derive(Debug)]
-pub struct Scanner {
-    filters: Vec<ScannerFilter>,
-}
-
-impl Scanner {
-    pub fn new() -> Self {
-        Scanner {
-            filters: Vec::new(),
-        }
-    }
-
-    pub fn check_filters(&self, path: &Path) -> bool {
-        for filter in &self.filters {
-            if !filter.check(path) {
-                return false;
-            }
-        }
-        true
-    }
-
-    pub fn add_filter(&mut self, filter: ScannerFilter) {
-        self.filters.push(filter);
-    }
-
-    pub fn scan_folder(&self, storage: &StorageEngine, path: &str) {
-        // Implementation for scanning a folder
-        println!("Scanning folder: {}", path);
-
-        let walker = walkdir::WalkDir::new(path);
-        let conn = storage.get_connection();
-
-        for entry in walker.into_iter().filter_map(|e| e.ok()) {
-            let file_path = entry.path();
-
-            if self.check_filters(file_path) {
-                println!("Found file: {:?}", file_path);
-
-                let mut document = Document::from_path(file_path);
-
-                document.save(conn).unwrap_or_else(|e| {
-                    eprintln!("Error saving document {:?}: {:?}", file_path, e);
-                });
-
-                println!("Document saved: {:?}", document);
-            }
-        }
     }
 }

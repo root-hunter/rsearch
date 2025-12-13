@@ -1,4 +1,4 @@
-use rsearch::{engine::{scanner::{Scanner, ScannerFilter}, storage::StorageEngine}, entities::document::Document};
+use rsearch::{engine::{scanner::{Scanner, filters::Filter}, storage::StorageEngine}, entities::document::Document};
 
 fn main() {
     let storage = StorageEngine::new();
@@ -20,7 +20,7 @@ fn main() {
         println!("Document saved successfully.");
     }
 
-    let mut filter = ScannerFilter::new();
+    let mut filter = Filter::new();
     filter.set_case_sensitive(false);
     filter.set_filename_contains("report");
 
