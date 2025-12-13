@@ -14,12 +14,37 @@ pub enum ScannerFilterError {
 }
 
 #[derive(Debug)]
+pub struct ScannerFilterStringCondition {
+    substring: String,
+    case_sensitive: bool,
+}
+
+impl ScannerFilterStringCondition {
+    pub fn new(substring: &str, case_sensitive: bool) -> Self {
+        ScannerFilterStringCondition {
+            substring: substring.to_string(),
+            case_sensitive,
+        }
+    }
+
+    pub fn matches(&self, target: &str) -> bool {
+        if self.case_sensitive {
+            target.contains(&self.substring)
+        } else {
+            target
+                .to_lowercase()
+                .contains(&self.substring.to_lowercase())
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct ScannerFilter {
     case_sensitive: bool,
-    filename_contains: Option<String>,
-    filename_not_contains: Option<String>,
-    dir_contains: Option<String>,
-    dir_not_contains: Option<String>,
+    filename_contains: Option<ScannerFilterStringCondition>,
+    filename_not_contains: Option<ScannerFilterStringCondition>,
+    dir_contains: Option<ScannerFilterStringCondition>,
+    dir_not_contains: Option<ScannerFilterStringCondition>,
     extension_is: Option<String>,
     extension_is_not: Option<String>,
     filename_regex: Option<Regex>,
@@ -40,19 +65,31 @@ impl ScannerFilter {
     }
 
     pub fn set_filename_contains(&mut self, substring: &str) {
-        self.filename_contains = Some(substring.to_string());
+        self.filename_contains = Some(ScannerFilterStringCondition {
+            substring: substring.to_string(),
+            case_sensitive: self.case_sensitive,
+        });
     }
 
     pub fn set_filename_not_contains(&mut self, substring: &str) {
-        self.filename_not_contains = Some(substring.to_string());
+        self.filename_not_contains = Some(ScannerFilterStringCondition {
+            substring: substring.to_string(),
+            case_sensitive: self.case_sensitive,
+        });
     }
 
     pub fn set_dir_contains(&mut self, substring: &str) {
-        self.dir_contains = Some(substring.to_string());
+        self.dir_contains = Some(ScannerFilterStringCondition {
+            substring: substring.to_string(),
+            case_sensitive: self.case_sensitive,
+        });
     }
 
     pub fn set_dir_not_contains(&mut self, substring: &str) {
-        self.dir_not_contains = Some(substring.to_string());
+        self.dir_not_contains = Some(ScannerFilterStringCondition {
+            substring: substring.to_string(),
+            case_sensitive: self.case_sensitive,
+        });
     }
 
     pub fn set_extension_is(&mut self, extension: &str) {
@@ -75,39 +112,26 @@ impl ScannerFilter {
 
     pub fn check(&self, path: &Path) -> bool {
         let mut matches = true;
-        let file_name = path.file_name().and_then(|name| name.to_str()).unwrap_or_default();
+        let file_name = path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or_default();
         let dir_path = path.parent().and_then(|p| p.to_str()).unwrap_or_default();
 
-        if let Some(ref substring) = self.filename_contains {
-            if self.case_sensitive {
-                matches = matches && file_name.contains(substring);
-            } else {
-                matches = matches && file_name.to_lowercase().contains(&substring.to_lowercase());
-            }
+        if let Some(ref condition) = self.filename_contains {
+            matches = matches && condition.matches(file_name);
         }
 
-        if let Some(ref substring) = self.filename_not_contains {
-            if self.case_sensitive {
-                matches = matches && !file_name.contains(substring);
-            } else {
-                matches = matches && !file_name.to_lowercase().contains(&substring.to_lowercase());
-            }
+        if let Some(ref condition) = self.filename_not_contains {
+            matches = matches && !condition.matches(file_name);
         }
 
-        if let Some(ref substring) = self.dir_contains {
-            if self.case_sensitive {
-                matches = matches && dir_path.contains(substring);
-            } else {
-                matches = matches && dir_path.to_lowercase().contains(&substring.to_lowercase());
-            }
+        if let Some(ref condition) = self.dir_contains {
+            matches = matches && condition.matches(dir_path);
         }
 
-        if let Some(ref substring) = self.dir_not_contains {
-            if self.case_sensitive {
-                matches = matches && !dir_path.contains(substring);
-            } else {
-                matches = matches && !dir_path.to_lowercase().contains(&substring.to_lowercase());
-            }
+        if let Some(ref condition) = self.dir_not_contains {
+            matches = matches && !condition.matches(dir_path);
         }
 
         if let Some(ref extension) = self.extension_is {
