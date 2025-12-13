@@ -2,7 +2,7 @@ use std::thread;
 
 use rsearch::{
     engine::{
-        Engine, extractor::Extractor, scanner::{FiltersMode, filters::Filter}, storage::{STORAGE_DATABASE_PATH, StorageEngine}
+        Engine, extractor::Extractor, scanner::{FiltersMode, Scanner, filters::Filter}, storage::{STORAGE_DATABASE_PATH, StorageEngine}
     },
     init_logging,
 };
@@ -10,17 +10,15 @@ use rsearch::{
 fn main() {
     init_logging();
 
-    let engine = Engine::new();
-    
     let mut extractor = Extractor::new();
     extractor.init(1);
-    
-    let tx = extractor.get_channel_sender_at(0).expect("Failed to get channel sender");
 
+    let channels = extractor.get_channel_senders();
+    
     let mut threads: Vec<thread::JoinHandle<()>> = vec![];
 
-    let mut scanner = engine.scanner;
-    scanner.set_channel_sender(tx);
+    let mut scanner = Scanner::new();
+    scanner.add_channel_senders(channels);
 
     let t2 = thread::spawn(move || {
         let conn =

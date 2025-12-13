@@ -27,8 +27,8 @@ pub fn init_logging() {
             format()
                 .with_level(true)
                 .with_target(true)
-                .with_thread_ids(false)
-                .with_thread_names(false),
+                .with_thread_ids(true)
+                .with_thread_names(true),
         )
         .with_writer(file_appender);
 
@@ -38,9 +38,9 @@ pub fn init_logging() {
         .event_format(
             format()
                 .with_level(true)
-                .with_target(true) // 🔥 QUI
-                .with_thread_ids(false)
-                .with_thread_names(false),
+                .with_target(true)
+                .with_thread_ids(true)
+                .with_thread_names(true),
         )
         .with_writer(std::io::stdout);
 

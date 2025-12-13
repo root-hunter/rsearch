@@ -3,14 +3,11 @@ pub mod worker;
 
 use std::{
     env,
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 use crate::{
-    engine::{
-        extractor::{formats::{FormatExtractor, FormatType}, worker::ExtractorWorker},
-        storage::STORAGE_DATABASE_PATH,
-    },
+    engine::extractor::worker::ExtractorWorker,
     entities::document::Document,
 };
 use crossbeam::channel;
@@ -55,13 +52,17 @@ impl Extractor {
 
     pub fn init(&mut self, num_workers: usize) {
         for _ in 0..num_workers {
-            let mut worker = ExtractorWorker::new();
+            let index = self.workers.len();
+            
+            info!(target: LOG_TARGET, "Starting extractor worker {}", index);
+            
+            let mut worker = ExtractorWorker::new(index);
             worker.run();
             self.workers.push(worker);
         }
     }
 
-    pub fn get_channel_sender_all(&self) -> Vec<channel::Sender<Document>> {
+    pub fn get_channel_senders(&self) -> Vec<channel::Sender<Document>> {
         self.workers
             .iter()
             .map(|worker| worker.get_channel_sender().clone())

@@ -1,32 +1,34 @@
-use std::{
-    env,
-    time::{Duration, Instant},
-};
+use std::time::{Duration, Instant};
 
 use crate::{
     engine::{
-        extractor::{EXTRACTOR_FLUSH_INTERVAL, EXTRACTOR_INSERT_BATCH_SIZE, ExtractorError, formats::{self, FormatExtractor, FormatType}},
+        extractor::{
+            EXTRACTOR_FLUSH_INTERVAL, EXTRACTOR_INSERT_BATCH_SIZE, ExtractorError,
+            formats::{self, FormatExtractor, FormatType},
+        },
         storage::STORAGE_DATABASE_PATH,
     },
     entities::document::Document,
 };
-use crossbeam::channel;
+use crossbeam::{channel, thread};
 use tracing::{error, info};
 
 const LOG_TARGET: &str = "extractor_worker";
 
 #[derive(Debug)]
 pub struct ExtractorWorker {
+    id: usize,
     channel_tx: crossbeam::channel::Sender<Document>,
     channel_rx: crossbeam::channel::Receiver<Document>,
     pub thread_handle: Option<std::thread::JoinHandle<Result<(), ExtractorError>>>,
 }
 
 impl ExtractorWorker {
-    pub fn new() -> Self {
+    pub fn new(id: usize) -> Self {
         let (tx, rx) = channel::unbounded::<Document>();
 
         ExtractorWorker {
+            id,
             channel_tx: tx,
             channel_rx: rx,
             thread_handle: None,
@@ -35,8 +37,16 @@ impl ExtractorWorker {
 
     pub fn run(&mut self) {
         let receiver = self.channel_rx.clone();
-        let mut conn =
-            rusqlite::Connection::open(*STORAGE_DATABASE_PATH).expect("Failed to open database");
+        let conn = rusqlite::Connection::open(*STORAGE_DATABASE_PATH);
+
+        let worker_id = self.id;
+
+        if let Err(e) = conn {
+            error!(target: LOG_TARGET, worker = worker_id, "Failed to open database connection: {:?}", e);
+            return;
+        }
+
+        let mut conn = conn.unwrap();
 
         self.thread_handle = Some(std::thread::spawn(move || {
             let mut buffer: Vec<Document> = vec![];
@@ -45,7 +55,7 @@ impl ExtractorWorker {
             loop {
                 match receiver.recv_timeout(Duration::from_millis(200)) {
                     Ok(mut document) => {
-                        info!(target: LOG_TARGET, "Processing document: {:?}", document);
+                        info!(target: LOG_TARGET, worker_id = worker_id, "Processing document: {:?}", document);
 
                         match document.get_format_type() {
                             FormatType::Pdf => {
@@ -60,15 +70,15 @@ impl ExtractorWorker {
                                         buffer.push(document);
                                     }
                                     Err(e) => {
-                                        error!(target: LOG_TARGET, "Failed to extract text from PDF: {:?}", e);
+                                        error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract text from PDF: {:?}", e);
                                     }
                                 }
                             }
                             FormatType::Txt => {
-                                error!(target: LOG_TARGET, "Text extraction not implemented yet.");
+                                error!(target: LOG_TARGET, worker_id = worker_id, "Text extraction not implemented yet.");
                             }
                             _ => {
-                                error!(target: LOG_TARGET, "Unsupported document format: {:?}", document.get_format_type());
+                                error!(target: LOG_TARGET, worker_id = worker_id, "Unsupported document format: {:?}", document.get_format_type());
                             }
                         }
                     }

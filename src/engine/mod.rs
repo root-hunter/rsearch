@@ -18,16 +18,12 @@ pub enum EngineError {
 
 #[derive(Debug)]
 pub struct Engine {
-    pub scanner: scanner::Scanner,
-    pub extractor: extractor::worker::ExtractorWorker,
     pub classifier: classifier::Classifier,
 }
 
 impl Engine {
     pub fn new() -> Self {
         Engine {
-            scanner: scanner::Scanner::new(),
-            extractor: extractor::worker::ExtractorWorker::new(),
             classifier: classifier::Classifier::new(),
         }
     }

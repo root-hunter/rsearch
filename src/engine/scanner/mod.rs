@@ -2,6 +2,7 @@ pub mod filters;
 
 use std::path::Path;
 
+use crossbeam::channel;
 use tracing::{error, info};
 
 use crate::{engine::scanner::filters::{Filter, FilterError}, entities::document::Document};
@@ -24,7 +25,7 @@ pub enum FiltersMode {
 pub struct Scanner {
     filters: Vec<Filter>,
     filters_mode: FiltersMode,
-    channel_tx: Option<crossbeam::channel::Sender<Document>>,
+    channels: Vec<crossbeam::channel::Sender<Document>>,
 }
 
 impl Scanner {
@@ -32,7 +33,7 @@ impl Scanner {
         Scanner {
             filters_mode: FiltersMode::And,
             filters: Vec::new(),
-            channel_tx: None,
+            channels: Vec::new(),
         }
     }
 
@@ -62,8 +63,24 @@ impl Scanner {
         }
     }
 
-    pub fn set_channel_sender(&mut self, sender: crossbeam::channel::Sender<Document>) {
-        self.channel_tx = Some(sender);
+    pub fn add_channel_sender(&mut self, sender: crossbeam::channel::Sender<Document>) {
+        self.channels.push(sender);
+    }
+
+    pub fn add_channel_senders(&mut self, senders: Vec<crossbeam::channel::Sender<Document>>) {
+        for sender in senders {
+            self.add_channel_sender(sender);
+        }
+    }
+
+    pub fn remove_channel_sender(&mut self, index: usize) {
+        if index < self.channels.len() {
+            self.channels.remove(index);
+        }
+    }
+
+    pub fn clear_channel_senders(&mut self) {
+        self.channels.clear();
     }
 
     pub fn set_filters_mode(&mut self, mode: FiltersMode) {
@@ -75,7 +92,9 @@ impl Scanner {
     }
 
     fn process_document(&mut self, document: Document) {
-        self.channel_tx.as_ref().map(|tx| {
+        let channel = self.channels.get(0);
+        
+        channel.as_ref().map(|tx| {
             if let Err(e) = tx.send(document.clone()) {
                 error!(target: LOG_TARGET, "Failed to send document to extractor: {:?}", e);
             }
