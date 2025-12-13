@@ -1,5 +1,10 @@
+use std::fs;
+
 use crate::entities::document::Document;
 use crossbeam::channel;
+use tracing::{error, info};
+
+const LOG_TARGET: &str = "extractor";
 
 #[derive(Debug, Clone)]
 pub enum ExtractorType {
@@ -45,13 +50,23 @@ impl Extractor {
 
     pub fn extract(&self, data: &str) {
         // Extraction logic would go here
-        println!("Extracting data: {}", data);
+        info!(target: LOG_TARGET, "Extracting data: {}", data);
     }
 
-    pub fn process_documents(&self) {
-        while let Ok(doc) = self.channel_rx.try_recv() {
-            println!("Processing document: {:?}", doc);
-            // Further processing logic would go here
+    pub fn process_documents(&mut self) {
+        while let Ok(document) = self.channel_rx.try_recv() {
+            info!(target: LOG_TARGET, "Processing document: {:?}", document);
+
+            let path = document.get_path();
+            let path = std::path::Path::new(path);
+
+            fs::read_to_string(path)
+                .map(|content| {
+                    info!(target: LOG_TARGET, "Extracted content: {}", content);
+                })
+                .unwrap_or_else(|err| {
+                    error!(target: LOG_TARGET, "Failed to read file {}: {}", path.display(), err);
+                });
         }
     }
 }

@@ -1,8 +1,12 @@
+use tracing::info;
+
 pub mod storage;
 pub mod scanner;
 pub mod extractor;
 pub mod classifier;
 pub mod utils;
+
+const LOG_TARGET: &str = "engine";
 
 #[derive(Debug)]
 pub enum EngineError {
@@ -28,6 +32,8 @@ impl Engine {
     }
 
     pub fn initialize(&mut self) -> Result<(), EngineError> {
+        info!(target: LOG_TARGET, "Engine starting");
+
         self.storage_engine
             .initialize()
             .map_err(EngineError::StorageError)

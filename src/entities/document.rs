@@ -1,5 +1,9 @@
 use std::path::Path;
 
+use tracing::info;
+
+const LOG_TARGET: &str = "document";
+
 #[derive(Debug)]
 pub enum DocumentError {
     NotFound,
@@ -237,13 +241,13 @@ impl Document {
             )
             .map_err(DocumentError::DatabaseError)?;
 
-            println!("Saved document: {}", document.path);
+            info!(target: LOG_TARGET, "Saved document: {}", document.path);
         }
 
         tx.commit().map_err(DocumentError::DatabaseError)?;
 
-        println!("All documents saved successfully.");
-        println!("Total documents saved: {}", count);
+        info!(target: LOG_TARGET, "All documents saved successfully.");
+        info!(target: LOG_TARGET, "Total documents saved: {}", count);
 
         Ok(())
     }

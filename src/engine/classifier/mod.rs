@@ -1,3 +1,7 @@
+use tracing::info;
+
+const LOG_TARGET: &str = "classifier";
+
 #[derive(Debug, Clone)]
 pub struct Classifier {
     // Classifier fields would go here
@@ -12,6 +16,6 @@ impl Classifier {
 
     pub fn classify(&self, data: &str) {
         // Classification logic would go here
-        println!("Classifying data: {}", data);
+        info!(target: LOG_TARGET, "Classifying data: {}", data);
     }
 }

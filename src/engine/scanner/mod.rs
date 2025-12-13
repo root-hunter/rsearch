@@ -2,7 +2,11 @@ pub mod filters;
 
 use std::path::Path;
 
+use tracing::info;
+
 use crate::{engine::{scanner::filters::{Filter, FilterError}, storage::StorageEngine}, entities::document::Document};
+
+const LOG_TARGET: &str = "scanner";
 
 #[derive(Debug)]
 pub enum ScannerError {
@@ -22,6 +26,7 @@ pub struct Scanner {
     filters: Vec<Filter>,
     filters_mode: FiltersMode,
     documents: Vec<Document>,
+    channel_tx: Option<crossbeam::channel::Sender<Document>>,
 }
 
 impl Scanner {
@@ -30,6 +35,7 @@ impl Scanner {
             filters_mode: FiltersMode::And,
             documents: Vec::new(),
             filters: Vec::new(),
+            channel_tx: None,
         }
     }
 
@@ -59,6 +65,10 @@ impl Scanner {
         }
     }
 
+    pub fn set_channel_sender(&mut self, sender: crossbeam::channel::Sender<Document>) {
+        self.channel_tx = Some(sender);
+    }
+
     pub fn set_filters_mode(&mut self, mode: FiltersMode) {
         self.filters_mode = mode;
     }
@@ -68,11 +78,12 @@ impl Scanner {
     }
 
     fn add_document(&mut self, document: Document) {
+        self.channel_tx.as_ref().map(|tx| tx.send(document.clone()).unwrap());
         self.documents.push(document);
     }
 
     pub fn scan_folder(&mut self, path: &str) {
-        println!("Scanning folder: {}", path);
+        info!(target: LOG_TARGET, "Scanning folder: {}", path);
 
         let walker = walkdir::WalkDir::new(path);
 
@@ -80,7 +91,8 @@ impl Scanner {
             let file_path = entry.path();
 
             if self.check_filters(file_path) {
-                println!("Found file: {:?}", file_path);
+                info!(target: LOG_TARGET, "Found file: {:?}", file_path);
+
                 self.add_document(Document::from_path(file_path));
             }
         }
