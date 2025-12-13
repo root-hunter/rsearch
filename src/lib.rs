@@ -19,7 +19,7 @@ use tracing_subscriber::{
 
 pub fn init_logging() {
     // file logger (NO ANSI)
-    let file_appender = RollingFileAppender::new(Rotation::DAILY, "logs", "rsearch");
+    let file_appender = RollingFileAppender::new(Rotation::MINUTELY, "logs", "rsearch");
 
     let file_layer = fmt::layer()
         .with_ansi(false)

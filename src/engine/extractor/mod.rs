@@ -1,24 +1,33 @@
 pub mod formats;
 
-use std::fs;
+use std::{
+    fs, thread,
+    time::{Duration, Instant},
+};
 
-use crate::entities::document::Document;
+use crate::{
+    engine::{
+        extractor::formats::{FormatExtractor, FormatType},
+        storage::StorageEngine,
+    },
+    entities::document::Document,
+};
 use crossbeam::channel;
 use tracing::{error, info};
 
 const LOG_TARGET: &str = "extractor";
+const BATCH_SIZE: usize = 100;
+const FLUSH_INTERVAL: Duration = Duration::from_secs(5);
 
-#[derive(Debug, Clone)]
-pub enum ExtractorType {
-    Pdf,
-    Docx,
-    Txt,
-    Unknown,
+#[derive(Debug)]
+pub enum ExtractorError {
+    ExtractionFailed,
+    IoError(std::io::Error),
 }
 
 #[derive(Debug, Clone)]
 pub struct Extractor {
-    extractor_type: ExtractorType,
+    extractor_type: FormatType,
     channel_tx: crossbeam::channel::Sender<Document>,
     channel_rx: crossbeam::channel::Receiver<Document>,
 }
@@ -30,15 +39,15 @@ impl Extractor {
         Extractor {
             channel_tx: tx,
             channel_rx: rx,
-            extractor_type: ExtractorType::Unknown,
+            extractor_type: FormatType::Unknown,
         }
     }
 
-    pub fn set_extractor_type(&mut self, extractor_type: ExtractorType) {
+    pub fn set_extractor_type(&mut self, extractor_type: FormatType) {
         self.extractor_type = extractor_type;
     }
 
-    pub fn get_extractor_type(&self) -> &ExtractorType {
+    pub fn get_extractor_type(&self) -> &FormatType {
         &self.extractor_type
     }
 
@@ -55,20 +64,82 @@ impl Extractor {
         info!(target: LOG_TARGET, "Extracting data: {}", data);
     }
 
-    pub fn process_documents(&mut self) {
-        while let Ok(document) = self.channel_rx.try_recv() {
-            info!(target: LOG_TARGET, "Processing document: {:?}", document);
+    pub fn process_documents(
+        &mut self,
+        conn: &mut rusqlite::Connection,
+    ) -> Result<(), ExtractorError> {
+        let mut buffer: Vec<Document> = vec![];
+        let mut last_flush = Instant::now();
 
-            let path = document.get_path();
-            let path = std::path::Path::new(path);
+        loop {
+            match self.channel_rx.recv_timeout(Duration::from_millis(200)) {
+                Ok(mut document) => {
+                    info!(target: LOG_TARGET, "Processing document: {:?}", document);
 
-            fs::read_to_string(path)
-                .map(|content| {
-                    info!(target: LOG_TARGET, "Extracted content: {}", content);
-                })
-                .unwrap_or_else(|err| {
-                    error!(target: LOG_TARGET, "Failed to read file {}: {}", path.display(), err);
-                });
+                    match document.get_format_type() {
+                        FormatType::Pdf => {
+                            let extractor = formats::pdf::PdfExtractor;
+                            match extractor.extract_text(document.get_path()) {
+                                Ok(text) => {
+                                    let content = text.chars().take(100).collect::<String>();
+
+                                    info!(target: LOG_TARGET, "Extracted text from PDF: {}", content);
+
+                                    document.set_content(content);
+
+                                    buffer.push(document);
+                                }
+                                Err(e) => {
+                                    error!(target: LOG_TARGET, "Failed to extract text from PDF: {:?}", e);
+                                }
+                            }
+                        }
+                        FormatType::Txt => {
+                            error!(target: LOG_TARGET, "Text extraction not implemented yet.");
+                        }
+                        _ => {
+                            error!(target: LOG_TARGET, "Unsupported document format: {:?}", document.get_format_type());
+                        }
+                    }
+                }
+                Err(channel::RecvTimeoutError::Timeout) => {
+                    // Timeout occurred, check if we need to flush
+                }
+                Err(e) => {
+                    error!(target: LOG_TARGET, "Channel receive error: {:?}", e);
+                    break;
+                }
+            }
+
+            if buffer.len() >= BATCH_SIZE {
+                Self::flush_buffer(conn, &mut buffer)?;
+                last_flush = Instant::now();
+            }
+
+            // 🔥 flush per tempo
+            if !buffer.is_empty() && last_flush.elapsed() >= FLUSH_INTERVAL {
+                Self::flush_buffer(conn, &mut buffer)?;
+                last_flush = Instant::now();
+            }
         }
+
+        Ok(())
+    }
+
+    pub fn flush_buffer(
+        conn: &mut rusqlite::Connection,
+        buffer: &mut Vec<Document>,
+    ) -> Result<(), ExtractorError> {
+        info!(
+            target: LOG_TARGET,
+            count = buffer.len(),
+            "Saving batch"
+        );
+
+        let batch = buffer.drain(..).collect::<Vec<_>>();
+
+        Document::save_bulk(conn, batch).map_err(|_| ExtractorError::ExtractionFailed)?;
+
+        Ok(())
     }
 }

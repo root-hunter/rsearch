@@ -1,6 +1,6 @@
 run:
 	rm -rf ./storage.db
-	cargo run
+	RUST_LOG=info RUST_BACKTRACE=1 cargo run
 
 run-release:
 	rm -rf ./storage.db

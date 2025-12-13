@@ -1,5 +1,7 @@
 use tracing::info;
 
+use crate::engine::storage::StorageEngine;
+
 pub mod storage;
 pub mod scanner;
 pub mod extractor;
@@ -11,11 +13,11 @@ const LOG_TARGET: &str = "engine";
 #[derive(Debug)]
 pub enum EngineError {
     StorageError(storage::StorageError),
+    ExtractorError(extractor::ExtractorError),
 }
 
 #[derive(Debug)]
 pub struct Engine {
-    pub storage_engine: storage::StorageEngine,
     pub scanner: scanner::Scanner,
     pub extractor: extractor::Extractor,
     pub classifier: classifier::Classifier,
@@ -24,18 +26,16 @@ pub struct Engine {
 impl Engine {
     pub fn new() -> Self {
         Engine {
-            storage_engine: storage::StorageEngine::new(),
             scanner: scanner::Scanner::new(),
             extractor: extractor::Extractor::new(),
             classifier: classifier::Classifier::new(),
         }
     }
 
-    pub fn initialize(&mut self) -> Result<(), EngineError> {
+    pub fn initialize(&mut self, conn: &rusqlite::Connection) -> Result<(), EngineError> {
         info!(target: LOG_TARGET, "Engine starting");
 
-        self.storage_engine
-            .initialize()
+        StorageEngine::initialize(conn)
             .map_err(EngineError::StorageError)
     }
 }

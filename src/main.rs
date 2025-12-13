@@ -1,37 +1,44 @@
 use std::thread;
 
-use rsearch::{engine::{
-    Engine, extractor::{Extractor, formats::{FormatExtractor, pdf::PdfExtractor}}, scanner::{FiltersMode, filters::Filter}
-}, init_logging};
+use rsearch::{
+    engine::{
+        Engine,
+        scanner::{FiltersMode, filters::Filter},
+        storage::{DATABASE_FILE, StorageEngine},
+    },
+    init_logging,
+};
 
 use tracing::{error, info};
 
 fn main() {
     init_logging();
 
-    let extractor = PdfExtractor;
-    let t = extractor.extract_text("/home/roothunter/App/NuSMV-2.6.0-Linux/share/nusmv/doc/tutorial.pdf").unwrap();
-
-    info!("Extracted PDF Text:\n{}", t);
-
     let engine = Engine::new();
-    let mut storage = engine.storage_engine;
     let mut extractor = engine.extractor;
     let tx = extractor.get_channel_sender().clone();
 
-    thread::spawn(move || {
+    let mut threads: Vec<thread::JoinHandle<()>> = vec![];
+
+    let t1 = thread::spawn(move || {
+        let mut conn = rusqlite::Connection::open(DATABASE_FILE).expect("Failed to open database");
+
         loop {
-            extractor.process_documents();
+            if let Err(e) = extractor.process_documents(&mut conn) {
+                error!(target: "main", "Error processing documents: {:?}", e);
+            }
         }
     });
+
+    threads.push(t1);
 
     let mut scanner = engine.scanner;
     scanner.set_channel_sender(tx);
 
-    _ = thread::spawn(move || {
-        storage
-            .initialize()
-            .expect("Failed to initialize storage engine");
+    let t2 = thread::spawn(move || {
+        let conn = rusqlite::Connection::open(DATABASE_FILE).expect("Failed to open database");
+
+        StorageEngine::initialize(&conn).expect("Failed to initialize storage engine");
 
         let mut filter1 = Filter::new();
         filter1.set_case_sensitive(false);
@@ -48,11 +55,16 @@ fn main() {
         //scanner.add_filter(filter2);
 
         scanner.scan_folder("/home/roothunter");
-        if let Err(e) = scanner.save_documents(&mut storage) {
-            error!("Error saving scanned documents: {:?}", e);
-        } else {
-            info!(target: "main", "Scanned documents saved successfully.");
-        }
-    })
-    .join();
+        // if let Err(e) = scanner.save_documents(&mut storage) {
+        //     error!("Error saving scanned documents: {:?}", e);
+        // } else {
+        //     info!(target: "main", "Scanned documents saved successfully.");
+        // }
+    });
+
+    threads.push(t2);
+
+    for handle in threads {
+        handle.join().unwrap();
+    }
 }

@@ -1,6 +1,9 @@
 use std::path::Path;
 
 use tracing::info;
+use tracing_subscriber::fmt::format::Format;
+
+use crate::engine::extractor::formats::FormatType;
 
 const LOG_TARGET: &str = "document";
 
@@ -250,5 +253,13 @@ impl Document {
         info!(target: LOG_TARGET, "Total documents saved: {}", count);
 
         Ok(())
+    }
+
+    pub fn get_format_type(&self) -> FormatType {
+        FormatType::get_by_extension(
+            self.extension
+                .as_deref()
+                .unwrap_or(""),
+        )
     }
 }

@@ -79,7 +79,7 @@ impl Scanner {
 
     fn add_document(&mut self, document: Document) {
         self.channel_tx.as_ref().map(|tx| tx.send(document.clone()).unwrap());
-        self.documents.push(document);
+        //self.documents.push(document);
     }
 
     pub fn scan_folder(&mut self, path: &str) {
@@ -98,9 +98,7 @@ impl Scanner {
         }
     }
 
-    pub fn save_documents(&mut self, storage: &mut StorageEngine) -> Result<(), ScannerError> {
-        let conn = storage.get_connection_mut();
-
+    pub fn save_documents(&mut self, conn: &mut rusqlite::Connection) -> Result<(), ScannerError> {
         Document::save_bulk(conn, self.documents.clone()).map_err(|_| ScannerError::SaveDocuments)?;
 
         Ok(())
