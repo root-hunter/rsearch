@@ -2,12 +2,10 @@ use std::thread;
 
 use rsearch::engine::{
     Engine,
-    extractor::{self, Extractor},
-    scanner::{FiltersMode, Scanner, filters::Filter},
-    storage::StorageEngine,
+    scanner::{FiltersMode, filters::Filter},
 };
 
-use tracing::{debug, error, info, warn};
+use tracing::{error, info};
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::{
     EnvFilter,
