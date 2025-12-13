@@ -504,6 +504,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "crossbeam",
+ "once_cell",
  "pdfium-render",
  "regex",
  "rusqlite",

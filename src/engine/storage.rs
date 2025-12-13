@@ -1,6 +1,16 @@
+use std::env;
+
+use once_cell::sync::Lazy;
 use rusqlite::{Connection, Result};
 
-pub const DATABASE_FILE: &str = "storage.db";
+pub static STORAGE_DATABASE_PATH: Lazy<&'static str> = Lazy::new(|| {
+    Box::leak(
+        env::var("DATABASE_FILE")
+            .unwrap_or_else(|_| "storage.db".into())
+            .into_boxed_str(),
+    )
+});
+
 
 #[derive(Debug)]
 pub enum StorageError {

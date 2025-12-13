@@ -1,7 +1,6 @@
 use std::path::Path;
 
 use tracing::info;
-use tracing_subscriber::fmt::format::Format;
 
 use crate::engine::extractor::formats::FormatType;
 

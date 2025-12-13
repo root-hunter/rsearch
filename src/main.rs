@@ -4,12 +4,12 @@ use rsearch::{
     engine::{
         Engine,
         scanner::{FiltersMode, filters::Filter},
-        storage::{DATABASE_FILE, StorageEngine},
+        storage::{STORAGE_DATABASE_PATH, StorageEngine},
     },
     init_logging,
 };
 
-use tracing::{error, info};
+use tracing::error;
 
 fn main() {
     init_logging();
@@ -21,12 +21,10 @@ fn main() {
     let mut threads: Vec<thread::JoinHandle<()>> = vec![];
 
     let t1 = thread::spawn(move || {
-        let mut conn = rusqlite::Connection::open(DATABASE_FILE).expect("Failed to open database");
+        let mut conn = rusqlite::Connection::open(*STORAGE_DATABASE_PATH).expect("Failed to open database");
 
-        loop {
-            if let Err(e) = extractor.process_documents(&mut conn) {
-                error!(target: "main", "Error processing documents: {:?}", e);
-            }
+        if let Err(e) = extractor.process_documents(&mut conn) {
+            error!(target: "main", "Error processing documents: {:?}", e);
         }
     });
 
@@ -36,7 +34,7 @@ fn main() {
     scanner.set_channel_sender(tx);
 
     let t2 = thread::spawn(move || {
-        let conn = rusqlite::Connection::open(DATABASE_FILE).expect("Failed to open database");
+        let conn = rusqlite::Connection::open(*STORAGE_DATABASE_PATH).expect("Failed to open database");
 
         StorageEngine::initialize(&conn).expect("Failed to initialize storage engine");
 

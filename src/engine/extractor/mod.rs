@@ -1,23 +1,31 @@
 pub mod formats;
 
-use std::{
-    fs, thread,
-    time::{Duration, Instant},
-};
+use std::{env, time::{Duration, Instant}};
 
 use crate::{
-    engine::{
-        extractor::formats::{FormatExtractor, FormatType},
-        storage::StorageEngine,
-    },
+    engine::extractor::formats::{FormatExtractor, FormatType},
     entities::document::Document,
 };
 use crossbeam::channel;
+use once_cell::sync::Lazy;
 use tracing::{error, info};
 
 const LOG_TARGET: &str = "extractor";
-const BATCH_SIZE: usize = 100;
-const FLUSH_INTERVAL: Duration = Duration::from_secs(5);
+
+static EXTRACTOR_INSERT_BATCH_SIZE: Lazy<usize> = Lazy::new(|| {
+    env::var("BATCH_SIZE")
+        .ok()   
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(100)
+});
+
+static EXTRACTOR_FLUSH_INTERVAL: Lazy<Duration> = Lazy::new(|| {
+    env::var("FLUSH_INTERVAL")
+        .ok()   
+         .and_then(|s| s.parse::<u64>().ok())   // prova a parsare u64
+        .map(Duration::from_secs)  
+        .unwrap_or(Duration::from_secs(5))
+});
 
 #[derive(Debug)]
 pub enum ExtractorError {
@@ -111,12 +119,12 @@ impl Extractor {
                 }
             }
 
-            if buffer.len() >= BATCH_SIZE {
+            if buffer.len() >= *EXTRACTOR_INSERT_BATCH_SIZE {
                 Self::flush_buffer(conn, &mut buffer)?;
                 last_flush = Instant::now();
             }
 
-            if !buffer.is_empty() && last_flush.elapsed() >= FLUSH_INTERVAL {
+            if !buffer.is_empty() && last_flush.elapsed() >= *EXTRACTOR_FLUSH_INTERVAL {
                 Self::flush_buffer(conn, &mut buffer)?;
                 last_flush = Instant::now();
             }
