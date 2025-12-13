@@ -1,5 +1,6 @@
 pub mod storage;
 pub mod scanner;
+pub mod extractor;
 pub mod classifier;
 pub mod utils;
 

@@ -1,4 +1,4 @@
-use rsearch::{engine::{scanner::{Scanner, ScannerFilterMode, filters::Filter}, storage::StorageEngine}, entities::document::Document};
+use rsearch::{engine::{scanner::{Scanner, FiltersMode, filters::Filter}, storage::StorageEngine}, entities::document::Document};
 
 fn main() {
     let mut storage = StorageEngine::new();
@@ -16,7 +16,7 @@ fn main() {
 
     let mut scanner = Scanner::new();
 
-    scanner.set_filter_mode(ScannerFilterMode::Or);
+    scanner.set_filters_mode(FiltersMode::Or);
 
     scanner.add_filter(filter1);
     //scanner.add_filter(filter2);
