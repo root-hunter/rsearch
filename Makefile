@@ -1,6 +1,4 @@
 run:
-	export LD_LIBRARY_PATH=/opt/pdfium:$LD_LIBRARY_PATH
-
 	rm -rf ./storage.db
 	cargo run
 

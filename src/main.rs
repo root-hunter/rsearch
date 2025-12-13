@@ -1,7 +1,7 @@
 use std::thread;
 
 use rsearch::{engine::{
-    Engine, extractor::formats::pdf::read_pdf_text, scanner::{FiltersMode, filters::Filter}
+    Engine, extractor::{Extractor, formats::{FormatExtractor, pdf::PdfExtractor}}, scanner::{FiltersMode, filters::Filter}
 }, init_logging};
 
 use tracing::{error, info};
@@ -9,7 +9,8 @@ use tracing::{error, info};
 fn main() {
     init_logging();
 
-    let t = read_pdf_text("/home/roothunter/App/NuSMV-2.6.0-Linux/share/nusmv/doc/tutorial.pdf").unwrap();
+    let extractor = PdfExtractor;
+    let t = extractor.extract_text("/home/roothunter/App/NuSMV-2.6.0-Linux/share/nusmv/doc/tutorial.pdf").unwrap();
 
     info!("Extracted PDF Text:\n{}", t);
 
