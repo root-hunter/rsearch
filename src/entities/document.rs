@@ -1,3 +1,5 @@
+use crate::engine::utils;
+
 #[derive(Debug)]
 pub enum DocumentError {
     NotFound,
@@ -49,12 +51,8 @@ impl Document {
         &self.extension
     }
 
-    fn normalize_content(content: &str) -> String {
-        content.to_ascii_uppercase()
-    }
-
     pub fn set_content(&mut self, content: String) {
-        self.content = Document::normalize_content(&content);
+        self.content = utils::normalize_content(&content);
     }
 
     pub fn get_content(&self) -> &str {
