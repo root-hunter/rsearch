@@ -11,7 +11,7 @@ fn main() {
     init_logging();
 
     let mut extractor = Extractor::new();
-    extractor.init(1);
+    extractor.init(2);
 
     let channels = extractor.get_channel_senders();
     
@@ -54,5 +54,7 @@ fn main() {
         handle.join().unwrap();
     }
 
-    extractor.join_all().expect("Failed to join extractor workers");
+    loop {
+        
+    }
 }

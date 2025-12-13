@@ -25,6 +25,7 @@ pub struct Scanner {
     filters: Vec<Filter>,
     filters_mode: FiltersMode,
     channels: Vec<crossbeam::channel::Sender<Document>>,
+    last_channel_index: usize,
 }
 
 impl Scanner {
@@ -33,6 +34,7 @@ impl Scanner {
             filters_mode: FiltersMode::And,
             filters: Vec::new(),
             channels: Vec::new(),
+            last_channel_index: 0,
         }
     }
 
@@ -91,13 +93,15 @@ impl Scanner {
     }
 
     fn process_document(&mut self, document: Document) {
-        let channel = self.channels.get(0);
+        let channel = self.channels.get(self.last_channel_index);
         
         channel.as_ref().map(|tx| {
             if let Err(e) = tx.send(document.clone()) {
                 error!(target: LOG_TARGET, "Failed to send document to extractor: {:?}", e);
             }
         });
+
+        self.last_channel_index = (self.last_channel_index + 1) % self.channels.len();
     }
 
     pub fn scan_folder(&mut self, path: &str) {

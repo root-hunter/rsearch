@@ -35,7 +35,13 @@ impl ExtractorWorker {
         }
     }
 
+    pub fn get_id(&self) -> usize {
+        self.id
+    }
+
     pub fn run(&mut self) {
+        assert!(self.thread_handle.is_none(), "Worker is already running");
+        
         let receiver = self.channel_rx.clone();
         let conn = rusqlite::Connection::open(*STORAGE_DATABASE_PATH);
 

@@ -12,7 +12,7 @@ use crate::{
 };
 use crossbeam::channel;
 use once_cell::sync::Lazy;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 const LOG_TARGET: &str = "extractor";
 
@@ -52,13 +52,7 @@ impl Extractor {
 
     pub fn init(&mut self, num_workers: usize) {
         for _ in 0..num_workers {
-            let index = self.workers.len();
-            
-            info!(target: LOG_TARGET, "Starting extractor worker {}", index);
-            
-            let mut worker = ExtractorWorker::new(index);
-            worker.run();
-            self.workers.push(worker);
+            self.add_worker();
         }
     }
 
@@ -75,24 +69,13 @@ impl Extractor {
             .map(|worker| worker.get_channel_sender().clone())
     }
 
-    pub fn join_all(&mut self) -> Result<(), ExtractorError> {
-        loop {
-            if self.workers.iter().all(|w| w.thread_handle.is_none()) {
-                break;
-            }
-
-            for worker in &mut self.workers {
-                if let Some(handle) = worker.thread_handle.take() {
-                    if let Err(e) = handle.join() {
-                        error!(target: LOG_TARGET, "Extractor worker error: {:?}", e);
-                    } else {
-                        info!(target: LOG_TARGET, "Extractor worker joined successfully");
-                        worker.run();
-                    }
-                }
-            }
-        }
-
-        Ok(())
+    pub fn add_worker(&mut self) {
+        let index = self.workers.len();
+        
+        info!(target: LOG_TARGET, "Starting extractor worker {}", index);
+        
+        let mut worker = ExtractorWorker::new(index);
+        worker.run();
+        self.workers.push(worker);
     }
 }
