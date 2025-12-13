@@ -1,14 +1,18 @@
-use rsearch::{engine::{scanner::{Scanner, FiltersMode, filters::Filter}, storage::StorageEngine}, entities::document::Document};
+use rsearch::engine::{
+    scanner::{FiltersMode, Scanner, filters::Filter},
+    storage::StorageEngine,
+};
 
 fn main() {
     let mut storage = StorageEngine::new();
-    storage.initialize().expect("Failed to initialize storage engine");
+    storage
+        .initialize()
+        .expect("Failed to initialize storage engine");
 
     let mut filter1 = Filter::new();
     filter1.set_case_sensitive(false);
     //filter1.set_filename_contains("report");
     filter1.set_extension_is("xlsx");
-
 
     let mut filter2 = Filter::new();
     filter2.set_case_sensitive(false);

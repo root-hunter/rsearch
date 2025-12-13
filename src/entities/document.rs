@@ -1,7 +1,5 @@
 use std::path::Path;
 
-use crate::{engine::utils, entities::document};
-
 #[derive(Debug)]
 pub enum DocumentError {
     NotFound,
@@ -20,6 +18,10 @@ pub struct Document {
 }
 
 impl Document {
+    pub fn normalize_content(content: &str) -> String {
+        content.to_ascii_uppercase()
+    }
+
     pub fn new() -> Self {
         Document {
             id: None,
@@ -85,7 +87,7 @@ impl Document {
     }
 
     pub fn set_content(&mut self, content: String) {
-        self.content = utils::normalize_content(&content);
+        self.content = Document::normalize_content(&content);
     }
 
     pub fn get_content(&self) -> &str {
@@ -205,7 +207,10 @@ impl Document {
         }
     }
 
-    pub fn save_bulk(conn: &mut rusqlite::Connection, documents: Vec<Document>) -> Result<(), DocumentError> {
+    pub fn save_bulk(
+        conn: &mut rusqlite::Connection,
+        documents: Vec<Document>,
+    ) -> Result<(), DocumentError> {
         let tx = conn.transaction().map_err(DocumentError::DatabaseError)?;
         let count = documents.len();
 
