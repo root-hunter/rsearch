@@ -2,12 +2,7 @@ use std::path::Path;
 
 use regex::Regex;
 
-pub enum ScannerError {
-    IoError(std::io::Error),
-    FilterError(ScannerFilterError),
-}
-
-pub enum ScannerFilterError {
+pub enum FilterError {
     InvalidRegex(regex::Error),
 }
 
@@ -98,8 +93,8 @@ impl Filter {
         self.extension_is_not = Some(extension.to_string());
     }
 
-    pub fn set_filename_regex(&mut self, pattern: &str) -> Result<(), ScannerFilterError> {
-        let regex = Regex::new(pattern).map_err(ScannerFilterError::InvalidRegex)?;
+    pub fn set_filename_regex(&mut self, pattern: &str) -> Result<(), FilterError> {
+        let regex = Regex::new(pattern).map_err(FilterError::InvalidRegex)?;
         self.filename_regex = Some(regex);
         Ok(())
     }

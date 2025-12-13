@@ -2,15 +2,11 @@ pub mod filters;
 
 use std::path::Path;
 
-use crate::{engine::{scanner::filters::Filter, storage::StorageEngine}, entities::document::Document};
+use crate::{engine::{scanner::filters::{Filter, FilterError}, storage::StorageEngine}, entities::document::Document};
 
 pub enum ScannerError {
     IoError(std::io::Error),
-    FilterError(ScannerFilterError),
-}
-
-pub enum ScannerFilterError {
-    InvalidRegex(regex::Error),
+    FilterError(FilterError),
 }
 
 #[derive(Debug)]
