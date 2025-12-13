@@ -1,14 +1,15 @@
 pub mod engine;
 pub mod entities;
 
-pub const PDFIUM_LIB_PATH: &str = "vendor/pdfium/lib/libpdfium.so";
-
 #[derive(Debug)]
 pub enum RSearchError {
     EngineError(engine::EngineError),
     EntityError(entities::EntityError),
 }
 
+use std::env;
+
+use once_cell::sync::Lazy;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::{
     EnvFilter,

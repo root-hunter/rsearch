@@ -1,6 +1,17 @@
+use std::env;
+
+use once_cell::sync::Lazy;
 use pdfium_render::prelude::*;
 
-use crate::{PDFIUM_LIB_PATH, engine::extractor::formats::FormatExtractor};
+use crate::{engine::extractor::formats::FormatExtractor};
+
+pub static PDFIUM_LIB_PATH: Lazy<&'static str> = Lazy::new(|| {
+    Box::leak(
+        env::var("PDFIUM_LIB_PATH")
+            .unwrap_or_else(|_| "vendor/pdfium/lib/libpdfium.so".into())
+            .into_boxed_str(),
+    )
+});
 
 pub struct PdfExtractor;
 
@@ -9,7 +20,7 @@ impl FormatExtractor for PdfExtractor {
         let lib = if PDFIUM_LIB_PATH.is_empty() {
             Pdfium::bind_to_system_library()?
         } else {
-            Pdfium::bind_to_library(PDFIUM_LIB_PATH)?
+            Pdfium::bind_to_library(*PDFIUM_LIB_PATH)?
         };
 
         let pdfium = Pdfium::new(lib);
