@@ -7,7 +7,6 @@ pub enum RSearchError {
     EntityError(entities::EntityError),
 }
 
-
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::{
     EnvFilter,
@@ -18,7 +17,7 @@ use tracing_subscriber::{
 
 pub fn init_logging() {
     // file logger (NO ANSI)
-    let file_appender = RollingFileAppender::new(Rotation::MINUTELY, "logs", "rsearch");
+    let file_appender = RollingFileAppender::new(Rotation::HOURLY, "logs", "rsearch");
 
     let file_layer = fmt::layer()
         .with_ansi(false)

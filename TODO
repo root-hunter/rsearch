@@ -1,0 +1,5 @@
+- Create single thread StorageEngine to insert and query the data from and to the DB
+- Implements Classification Engine Component
+- Demonize the software
+- Create API to call command on the demon
+- Create a CLI interface that use the deamon APIs

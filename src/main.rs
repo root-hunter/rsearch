@@ -15,8 +15,6 @@ fn main() {
 
     let channels = extractor.get_channel_senders();
     
-    let mut threads: Vec<thread::JoinHandle<()>> = vec![];
-
     let mut scanner = Scanner::new();
     scanner.add_channel_senders(channels);
 
@@ -47,12 +45,6 @@ fn main() {
         //     info!(target: "main", "Scanned documents saved successfully.");
         // }
     });
-
-    threads.push(t2);
-
-    for handle in threads {
-        handle.join().unwrap();
-    }
 
     loop {
         
