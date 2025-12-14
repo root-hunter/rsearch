@@ -1,5 +1,6 @@
 pub mod formats;
 pub mod worker;
+pub mod utils;
 
 use std::{
     env,

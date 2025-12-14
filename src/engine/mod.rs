@@ -11,8 +11,6 @@ pub mod utils;
 
 const LOG_TARGET: &str = "engine";
 
-
-
 #[derive(Debug)]
 pub enum EngineError {
     StorageError(storage::StorageError),

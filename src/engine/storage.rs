@@ -47,7 +47,8 @@ impl StorageEngine {
                 id INTEGER PRIMARY KEY,
                 path TEXT NOT NULL UNIQUE,
                 filename TEXT NOT NULL,
-                extension TEXT
+                extension TEXT,
+                status TEXT NOT NULL DEFAULT 'New'
             )",
                 [],
             )

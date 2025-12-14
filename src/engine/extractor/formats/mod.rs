@@ -1,4 +1,5 @@
 pub mod pdf;
+pub mod microsoft;
 
 #[derive(Debug, Clone)]
 pub enum FormatType {

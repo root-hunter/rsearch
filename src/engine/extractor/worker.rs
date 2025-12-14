@@ -3,12 +3,12 @@ use std::time::{Duration, Instant};
 use crate::{
     engine::{
         extractor::{
-            EXTRACTOR_FLUSH_INTERVAL, EXTRACTOR_INSERT_BATCH_SIZE, ExtractorError,
-            formats::{self, FormatExtractor, FormatType},
+            self, EXTRACTOR_FLUSH_INTERVAL, EXTRACTOR_INSERT_BATCH_SIZE, ExtractorError,
+            formats::{self, FormatExtractor, FormatType}, utils::build_text_content,
         },
         storage::STORAGE_DATABASE_PATH,
     },
-    entities::document::Document,
+    entities::document::{Document, DocumentStatus},
 };
 use crossbeam::channel;
 use tracing::{error, info};
@@ -41,7 +41,7 @@ impl ExtractorWorker {
 
     pub fn run(&mut self) {
         assert!(self.thread_handle.is_none(), "Worker is already running");
-        
+
         let receiver = self.channel_rx.clone();
         let conn = rusqlite::Connection::open(*STORAGE_DATABASE_PATH);
 
@@ -68,20 +68,41 @@ impl ExtractorWorker {
                                 let extractor = formats::pdf::PdfExtractor;
                                 match extractor.extract_text(document.get_path()) {
                                     Ok(text) => {
-                                        //let content = text.chars().take(100).collect::<String>();
-                                        //info!(target: LOG_TARGET, "Extracted text from PDF: {}", content);
+                                        info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text from PDF, length: {}", text.len());
 
-                                        document.set_content(text);
+                                        let content = build_text_content(text);
+
+                                        document.set_content(content);
+                                        document.set_status(DocumentStatus::Extracted);
 
                                         buffer.push(document);
                                     }
                                     Err(e) => {
-                                        error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract text from PDF: {:?}", e);
+                                        error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract text from PDF: {:?} ({})", e, document.get_path());
                                     }
                                 }
                             }
                             FormatType::Txt => {
                                 error!(target: LOG_TARGET, worker_id = worker_id, "Text extraction not implemented yet.");
+                            }
+                            FormatType::Docx => {
+                                let extractor = formats::microsoft::docx::DocxExtractor;
+                                match extractor.extract_text(document.get_path()) {
+                                    Ok(text) => {
+                                        info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text from DOCX, length: {}", text.len());
+
+                                        let content: String = build_text_content(text);
+                                        info!(target: LOG_TARGET, "Extracted text distribution: {:?}", content);
+
+                                        document.set_content(content);
+                                        document.set_status(DocumentStatus::Extracted);
+
+                                        buffer.push(document);
+                                    }
+                                    Err(e) => {
+                                        error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract text from DOCX: {:?} ({})", e, document.get_path());
+                                    }
+                                }
                             }
                             _ => {
                                 error!(target: LOG_TARGET, worker_id = worker_id, "Unsupported document format: {:?}", document.get_format_type());

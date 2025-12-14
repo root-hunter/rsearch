@@ -30,15 +30,14 @@ fn main() {
         filter1.set_extension_is("pdf");
 
         let mut filter2 = Filter::new();
-        filter2.set_case_sensitive(false);
-        filter2.set_filename_contains("bevy");
+        filter2.set_extension_is("docx");
 
         scanner.set_filters_mode(FiltersMode::Or);
 
         scanner.add_filter(filter1);
-        //scanner.add_filter(filter2);
+        scanner.add_filter(filter2);
 
-        scanner.scan_folder("/home/roothunter");
+        scanner.scan_folder("/home/roothunter/Documents");
         // if let Err(e) = scanner.save_documents(&mut storage) {
         //     error!("Error saving scanned documents: {:?}", e);
         // } else {

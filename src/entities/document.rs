@@ -14,6 +14,15 @@ pub enum DocumentError {
 }
 
 #[derive(Debug, Clone)]
+pub enum DocumentStatus {
+    New,
+    Scanned,
+    Extracted,
+    Classified,
+    Deleted,
+}
+
+#[derive(Debug, Clone)]
 pub struct Document {
     id: Option<i64>,
     path: String,
@@ -21,13 +30,10 @@ pub struct Document {
     extension: Option<String>,
     content: String,
     description: String,
+    status: DocumentStatus,
 }
 
 impl Document {
-    pub fn normalize_content(content: &str) -> String {
-        content.to_ascii_uppercase()
-    }
-
     pub fn new() -> Self {
         Document {
             id: None,
@@ -36,6 +42,7 @@ impl Document {
             extension: None,
             content: String::new(),
             description: String::new(),
+            status: DocumentStatus::New,
         }
     }
 
@@ -65,6 +72,7 @@ impl Document {
             extension,
             content: String::new(),
             description: String::new(),
+            status: DocumentStatus::New,
         }
     }
 
@@ -93,7 +101,7 @@ impl Document {
     }
 
     pub fn set_content(&mut self, content: String) {
-        self.content = Document::normalize_content(&content);
+        self.content = content;
     }
 
     pub fn get_content(&self) -> &str {
@@ -118,8 +126,8 @@ impl Document {
 
     pub fn save(&mut self, conn: &rusqlite::Connection) -> Result<(), DocumentError> {
         conn.execute(
-            "INSERT INTO documents (path, filename, extension) VALUES (?1, ?2, ?3)",
-            rusqlite::params![self.path, self.filename, self.extension],
+            "INSERT INTO documents (path, filename, extension, status) VALUES (?1, ?2, ?3, ?4)",
+            rusqlite::params![self.path, self.filename, self.extension, self.get_status_str()],
         )
         .map_err(|err| {
             if let rusqlite::Error::SqliteFailure(ref err_code, _) = err {
@@ -222,8 +230,8 @@ impl Document {
 
         for mut document in documents {
             tx.execute(
-                "INSERT INTO documents (path, filename, extension) VALUES (?1, ?2, ?3)",
-                rusqlite::params![document.path, document.filename, document.extension],
+                "INSERT INTO documents (path, filename, extension, status) VALUES (?1, ?2, ?3, ?4)",
+                rusqlite::params![document.path, document.filename, document.extension, document.get_status_str()],
             )
             .map_err(|err| {
                 if let rusqlite::Error::SqliteFailure(ref err_code, _) = err {
@@ -249,7 +257,7 @@ impl Document {
         tx.commit().map_err(DocumentError::DatabaseError)?;
 
         info!(target: LOG_TARGET, "All documents saved successfully.");
-        info!(target: LOG_TARGET, "Total documents saved: {}", count);
+        info!(target: LOG_TARGET, "Added documents: {}", count);
 
         Ok(())
     }
@@ -260,5 +268,23 @@ impl Document {
                 .as_deref()
                 .unwrap_or(""),
         )
+    }
+
+    pub fn get_status(&self) -> &DocumentStatus {
+        &self.status
+    }
+
+    pub fn get_status_str(&self) -> &str {
+        match self.status {
+            DocumentStatus::New => "New",
+            DocumentStatus::Scanned => "Scanned",
+            DocumentStatus::Extracted => "Extracted",
+            DocumentStatus::Classified => "Classified",
+            DocumentStatus::Deleted => "Deleted",
+        }
+    }
+
+    pub fn set_status(&mut self, status: DocumentStatus) {
+        self.status = status;
     }
 }

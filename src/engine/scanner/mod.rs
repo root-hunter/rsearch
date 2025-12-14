@@ -4,7 +4,7 @@ use std::path::Path;
 
 use tracing::{error, info};
 
-use crate::{engine::scanner::filters::{Filter, FilterError}, entities::document::Document};
+use crate::{engine::scanner::filters::{Filter, FilterError}, entities::document::{self, Document, DocumentStatus}};
 
 const LOG_TARGET: &str = "scanner";
 
@@ -114,8 +114,10 @@ impl Scanner {
 
             if self.check_filters(file_path) {
                 info!(target: LOG_TARGET, "Found file: {:?}", file_path);
+                let mut document = Document::from_path(file_path);
+                document.set_status(DocumentStatus::Scanned);
 
-                self.process_document(Document::from_path(file_path));
+                self.process_document(document);
             }
         }
     }
