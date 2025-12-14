@@ -1,5 +1,6 @@
 pub mod engine;
 pub mod entities;
+pub mod storage;
 
 #[derive(Debug)]
 pub enum RSearchError {

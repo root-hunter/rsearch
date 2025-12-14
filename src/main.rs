@@ -2,9 +2,9 @@ use std::thread;
 
 use rsearch::{
     engine::{
-        extractor::Extractor, scanner::{FiltersMode, Scanner, filters::Filter}, storage::{STORAGE_DATABASE_PATH, StorageEngine}
+        extractor::Extractor, scanner::{FiltersMode, Scanner, filters::Filter}
     },
-    init_logging,
+    init_logging, storage::{STORAGE_DATABASE_PATH, StorageEngine},
 };
 
 fn main() {

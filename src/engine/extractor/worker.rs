@@ -2,12 +2,15 @@ use std::time::{Duration, Instant};
 
 use crate::{
     engine::{
-        Engine, EngineTask, EngineTaskWorker, extractor::{
-            self, EXTRACTOR_FLUSH_INTERVAL, EXTRACTOR_INSERT_BATCH_SIZE, ExtractorError,
-            formats::{self, FormatExtractor, FormatType}, utils::build_text_content,
-        }, storage::STORAGE_DATABASE_PATH
+        Engine, EngineTask, EngineTaskWorker,
+        extractor::{
+            EXTRACTOR_FLUSH_INTERVAL, EXTRACTOR_INSERT_BATCH_SIZE, ExtractorError,
+            formats::{self, FormatExtractor, FormatType},
+            utils::build_text_content,
+        },
     },
     entities::document::{Document, DocumentStatus},
+    storage::STORAGE_DATABASE_PATH
 };
 use crossbeam::channel;
 use tracing::{error, info};
@@ -23,14 +26,6 @@ pub struct ExtractorWorker {
 }
 
 impl ExtractorWorker {
-    pub fn get_channel_sender(&self) -> &channel::Sender<Document> {
-        &self.channel_tx
-    }
-
-    pub fn get_channel_receiver(&self) -> &channel::Receiver<Document> {
-        &self.channel_rx
-    }
-
     pub fn extract(&self, data: &str) {
         // Extraction logic would go here
         info!(target: LOG_TARGET, "Extracting data: {}", data);
@@ -60,8 +55,8 @@ impl EngineTaskWorker for ExtractorWorker {
     }
 }
 
-impl EngineTask for ExtractorWorker {
-     fn new(id: usize) -> Self {
+impl EngineTask<Document> for ExtractorWorker {
+    fn new(id: usize) -> Self {
         let (tx, rx) = channel::unbounded::<Document>();
 
         ExtractorWorker {
@@ -70,6 +65,14 @@ impl EngineTask for ExtractorWorker {
             channel_rx: rx,
             thread_handle: None,
         }
+    }
+
+    fn get_channel_sender(&self) -> &channel::Sender<Document> {
+        &self.channel_tx
+    }
+
+    fn get_channel_receiver(&self) -> &channel::Receiver<Document> {
+        &self.channel_rx
     }
 
     fn run(&mut self) {

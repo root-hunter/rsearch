@@ -16,6 +16,10 @@ pub static STORAGE_DATABASE_PATH: Lazy<&'static str> = Lazy::new(|| {
     )
 });
 
+#[derive(Debug)]
+pub enum StorageCommand {
+    SaveDocument,
+}
 
 #[derive(Debug)]
 pub enum StorageError {
@@ -25,8 +29,8 @@ pub enum StorageError {
 
 #[derive(Debug)]
 pub struct StorageEngine{
-    channel_tx: crossbeam::channel::Sender<()>,
-    channel_rx: crossbeam::channel::Receiver<()>,
+    channel_tx: crossbeam::channel::Sender<StorageCommand>,
+    channel_rx: crossbeam::channel::Receiver<StorageCommand>,
     thread_handle: Option<std::thread::JoinHandle<Result<(), StorageError>>>,
 }
 
@@ -87,15 +91,23 @@ impl StorageEngine {
     }
 }
 
-impl EngineTask for StorageEngine {
+impl EngineTask<StorageCommand> for StorageEngine {
     fn new(id: usize) -> Self {
-        let (tx, rx) = crossbeam::channel::unbounded::<()>();
+        let (tx, rx) = crossbeam::channel::unbounded::<StorageCommand>();
 
         StorageEngine {
             channel_tx: tx,
             channel_rx: rx,
             thread_handle: None,
         }
+    }
+
+    fn get_channel_sender(&self) -> &crossbeam::channel::Sender<StorageCommand> {
+        &self.channel_tx
+    }
+    
+    fn get_channel_receiver(&self) -> &crossbeam::channel::Receiver<StorageCommand> {
+        &self.channel_rx
     }
 
     fn run(&mut self) {
@@ -117,4 +129,5 @@ impl EngineTask for StorageEngine {
 
         self.thread_handle = Some(handle);
     }
+
 }

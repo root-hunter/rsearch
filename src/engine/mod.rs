@@ -1,19 +1,18 @@
-
+use crossbeam::channel;
 use tracing::info;
 
-use crate::engine::storage::StorageEngine;
+use crate::storage::{StorageEngine, StorageError};
 
-pub mod storage;
-pub mod scanner;
-pub mod extractor;
 pub mod classifier;
+pub mod extractor;
+pub mod scanner;
 pub mod utils;
 
 const LOG_TARGET: &str = "engine";
 
 #[derive(Debug)]
 pub enum EngineError {
-    StorageError(storage::StorageError),
+    StorageError(StorageError),
     ExtractorError(extractor::ExtractorError),
 }
 
@@ -32,14 +31,17 @@ impl Engine {
     pub fn initialize(&mut self, conn: &rusqlite::Connection) -> Result<(), EngineError> {
         info!(target: LOG_TARGET, "Engine starting");
 
-        StorageEngine::initialize(conn)
-            .map_err(EngineError::StorageError)
+        StorageEngine::initialize(conn).map_err(EngineError::StorageError)
     }
 }
 
-pub trait EngineTask {
-    fn new(id: usize) -> Self where Self: Sized;
+pub trait EngineTask<T> {
+    fn new(id: usize) -> Self
+    where
+        Self: Sized;
     fn run(&mut self);
+    fn get_channel_sender(&self) -> &channel::Sender<T>;
+    fn get_channel_receiver(&self) -> &channel::Receiver<T>;
 }
 
 pub trait EngineTaskWorker {
