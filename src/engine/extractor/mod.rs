@@ -8,7 +8,7 @@ use std::{
 };
 
 use crate::{
-    engine::extractor::worker::ExtractorWorker,
+    engine::{EngineTask, extractor::worker::ExtractorWorker},
     entities::document::Document,
 };
 use crossbeam::channel;

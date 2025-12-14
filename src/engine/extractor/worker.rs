@@ -2,11 +2,10 @@ use std::time::{Duration, Instant};
 
 use crate::{
     engine::{
-        extractor::{
+        Engine, EngineTask, EngineTaskWorker, extractor::{
             self, EXTRACTOR_FLUSH_INTERVAL, EXTRACTOR_INSERT_BATCH_SIZE, ExtractorError,
             formats::{self, FormatExtractor, FormatType}, utils::build_text_content,
-        },
-        storage::STORAGE_DATABASE_PATH,
+        }, storage::STORAGE_DATABASE_PATH
     },
     entities::document::{Document, DocumentStatus},
 };
@@ -24,7 +23,45 @@ pub struct ExtractorWorker {
 }
 
 impl ExtractorWorker {
-    pub fn new(id: usize) -> Self {
+    pub fn get_channel_sender(&self) -> &channel::Sender<Document> {
+        &self.channel_tx
+    }
+
+    pub fn get_channel_receiver(&self) -> &channel::Receiver<Document> {
+        &self.channel_rx
+    }
+
+    pub fn extract(&self, data: &str) {
+        // Extraction logic would go here
+        info!(target: LOG_TARGET, "Extracting data: {}", data);
+    }
+
+    pub fn flush_buffer(
+        conn: &mut rusqlite::Connection,
+        buffer: &mut Vec<Document>,
+    ) -> Result<(), ExtractorError> {
+        info!(
+            target: LOG_TARGET,
+            count = buffer.len(),
+            "Saving batch"
+        );
+
+        let batch = buffer.drain(..).collect::<Vec<_>>();
+
+        Document::save_bulk(conn, batch).map_err(|_| ExtractorError::ExtractionFailed)?;
+
+        Ok(())
+    }
+}
+
+impl EngineTaskWorker for ExtractorWorker {
+    fn get_id(&self) -> usize {
+        self.id
+    }
+}
+
+impl EngineTask for ExtractorWorker {
+     fn new(id: usize) -> Self {
         let (tx, rx) = channel::unbounded::<Document>();
 
         ExtractorWorker {
@@ -35,11 +72,7 @@ impl ExtractorWorker {
         }
     }
 
-    pub fn get_id(&self) -> usize {
-        self.id
-    }
-
-    pub fn run(&mut self) {
+    fn run(&mut self) {
         assert!(self.thread_handle.is_none(), "Worker is already running");
 
         let receiver = self.channel_rx.clone();
@@ -131,35 +164,5 @@ impl ExtractorWorker {
             Ok(())
             // Worker loop would go here
         }));
-    }
-
-    pub fn get_channel_sender(&self) -> &channel::Sender<Document> {
-        &self.channel_tx
-    }
-
-    pub fn get_channel_receiver(&self) -> &channel::Receiver<Document> {
-        &self.channel_rx
-    }
-
-    pub fn extract(&self, data: &str) {
-        // Extraction logic would go here
-        info!(target: LOG_TARGET, "Extracting data: {}", data);
-    }
-
-    pub fn flush_buffer(
-        conn: &mut rusqlite::Connection,
-        buffer: &mut Vec<Document>,
-    ) -> Result<(), ExtractorError> {
-        info!(
-            target: LOG_TARGET,
-            count = buffer.len(),
-            "Saving batch"
-        );
-
-        let batch = buffer.drain(..).collect::<Vec<_>>();
-
-        Document::save_bulk(conn, batch).map_err(|_| ExtractorError::ExtractionFailed)?;
-
-        Ok(())
     }
 }

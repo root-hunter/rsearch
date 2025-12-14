@@ -36,3 +36,12 @@ impl Engine {
             .map_err(EngineError::StorageError)
     }
 }
+
+pub trait EngineTask {
+    fn new(id: usize) -> Self where Self: Sized;
+    fn run(&mut self);
+}
+
+pub trait EngineTaskWorker {
+    fn get_id(&self) -> usize;
+}

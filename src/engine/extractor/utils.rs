@@ -12,6 +12,13 @@ static EXTRACTOR_DISTRIBUTION_MAX_WORDS: Lazy<usize> = Lazy::new(|| {
         .unwrap_or(200)
 });
 
+static EXTRACTOR_MIN_WORD_LENGTH: Lazy<usize> = Lazy::new(|| {
+    env::var("EXTRACTOR_MIN_WORD_LENGTH")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(3)
+});
+
 pub fn text_normalize(text: &str) -> String {
     let s: String = text.chars()
         .filter(|c| c.is_alphanumeric() || c.is_whitespace())
@@ -28,7 +35,7 @@ pub fn text_extract_distribution(text: String) -> Vec<String> {
     for word in text.split(' ') {
         let word = word.replace('\n', "").replace('\r', "");
 
-        if word.len() < 3 {
+        if word.len() < *EXTRACTOR_MIN_WORD_LENGTH {
             continue;
         }
         
@@ -38,10 +45,6 @@ pub fn text_extract_distribution(text: String) -> Vec<String> {
     let mut words: Vec<_> = distribution.into_iter().collect();
     words.sort_by(|a, b| b.1.cmp(&a.1));
     words.truncate(*EXTRACTOR_DISTRIBUTION_MAX_WORDS);
-
-    words.sort();
-
-    info!(target: LOG_TARGET, "Extracted top words: {:?}", words);
 
     words.iter().map(|e| e.0.clone()).collect()
 }

@@ -2,6 +2,11 @@ use std::env;
 
 use once_cell::sync::Lazy;
 use rusqlite::{Connection, Result};
+use tracing::info;
+
+use crate::engine::{EngineTask};
+
+const LOG_TARGET: &str = "storage";
 
 pub static STORAGE_DATABASE_PATH: Lazy<&'static str> = Lazy::new(|| {
     Box::leak(
@@ -19,14 +24,17 @@ pub enum StorageError {
 }
 
 #[derive(Debug)]
-pub struct StorageEngine;
+pub struct StorageEngine{
+    channel_tx: crossbeam::channel::Sender<()>,
+    channel_rx: crossbeam::channel::Receiver<()>,
+    thread_handle: Option<std::thread::JoinHandle<Result<(), StorageError>>>,
+}
 
 impl StorageEngine {
-    pub fn new() -> Self {
-        StorageEngine
-    }
-
     pub fn initialize(conn: &Connection) -> Result<(), StorageError> {
+        info!(target: LOG_TARGET, "Initializing storage engine");
+
+        info!(target: LOG_TARGET, "Setting SQLite pragmas");
         conn
             .pragma_update(None, "journal_mode", &"WAL")
             .map_err(StorageError::InitializationError)?;
@@ -41,6 +49,7 @@ impl StorageEngine {
             .pragma_update(None, "locking_mode", &"EXCLUSIVE")
             .map_err(StorageError::InitializationError)?;
 
+        info!(target: LOG_TARGET, "Creating necessary tables and indexes");
         conn
             .execute(
                 "CREATE TABLE IF NOT EXISTS documents (
@@ -71,6 +80,41 @@ impl StorageEngine {
                 [],
             )
             .map_err(StorageError::InitializationError)?;
+
+        info!(target: LOG_TARGET, "Storage engine initialized successfully");
+
         Ok(())
+    }
+}
+
+impl EngineTask for StorageEngine {
+    fn new(id: usize) -> Self {
+        let (tx, rx) = crossbeam::channel::unbounded::<()>();
+
+        StorageEngine {
+            channel_tx: tx,
+            channel_rx: rx,
+            thread_handle: None,
+        }
+    }
+
+    fn run(&mut self) {
+        assert!(self.thread_handle.is_none(), "Worker is already running");
+
+        let receiver = self.channel_rx.clone();
+
+        let handle = std::thread::spawn(move || {
+            info!(target: LOG_TARGET, "StorageEngine worker started");
+
+            while let Ok(_) = receiver.recv() {
+                // Storage processing logic would go here
+            }
+
+            info!(target: LOG_TARGET, "StorageEngine worker stopping");
+
+            Ok(())
+        });
+
+        self.thread_handle = Some(handle);
     }
 }
