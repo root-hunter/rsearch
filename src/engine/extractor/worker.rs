@@ -10,7 +10,10 @@ use crate::{
         },
     },
     entities::document::{Document, DocumentStatus},
-    storage::STORAGE_DATABASE_PATH
+    storage::{
+        STORAGE_DATABASE_PATH,
+        commands::{CommandSaveBulkDocuments, StorageCommand},
+    },
 };
 use crossbeam::channel;
 use tracing::{error, info};
@@ -22,17 +25,29 @@ pub struct ExtractorWorker {
     id: usize,
     channel_tx: crossbeam::channel::Sender<Document>,
     channel_rx: crossbeam::channel::Receiver<Document>,
+    database_tx: crossbeam::channel::Sender<StorageCommand>,
     pub thread_handle: Option<std::thread::JoinHandle<Result<(), ExtractorError>>>,
 }
 
 impl ExtractorWorker {
-    pub fn extract(&self, data: &str) {
-        // Extraction logic would go here
-        info!(target: LOG_TARGET, "Extracting data: {}", data);
+    pub fn new(id: usize, database_tx: crossbeam::channel::Sender<StorageCommand>) -> Self {
+        let (tx, rx) = channel::unbounded::<Document>();
+
+        ExtractorWorker {
+            id,
+            database_tx,
+            channel_tx: tx,
+            channel_rx: rx,
+            thread_handle: None,
+        }
+    }
+
+    pub fn get_database_tx(&self) -> &crossbeam::channel::Sender<StorageCommand> {
+        &self.database_tx
     }
 
     pub fn flush_buffer(
-        conn: &mut rusqlite::Connection,
+        database_tx: crossbeam::channel::Sender<StorageCommand>,
         buffer: &mut Vec<Document>,
     ) -> Result<(), ExtractorError> {
         info!(
@@ -43,7 +58,14 @@ impl ExtractorWorker {
 
         let batch = buffer.drain(..).collect::<Vec<_>>();
 
-        Document::save_bulk(conn, batch).map_err(|_| ExtractorError::ExtractionFailed)?;
+        database_tx
+            .send(StorageCommand::SaveBulkDocuments(
+                CommandSaveBulkDocuments {
+                    documents: batch,
+                    resp_tx: None,
+                },
+            )).unwrap();
+        //Document::save_bulk(conn, batch).map_err(|_| ExtractorError::ExtractionFailed)?;
 
         Ok(())
     }
@@ -56,17 +78,6 @@ impl EngineTaskWorker for ExtractorWorker {
 }
 
 impl EngineTask<Document> for ExtractorWorker {
-    fn new(id: usize) -> Self {
-        let (tx, rx) = channel::unbounded::<Document>();
-
-        ExtractorWorker {
-            id,
-            channel_tx: tx,
-            channel_rx: rx,
-            thread_handle: None,
-        }
-    }
-
     fn get_channel_sender(&self) -> &channel::Sender<Document> {
         &self.channel_tx
     }
@@ -79,16 +90,9 @@ impl EngineTask<Document> for ExtractorWorker {
         assert!(self.thread_handle.is_none(), "Worker is already running");
 
         let receiver = self.channel_rx.clone();
-        let conn = rusqlite::Connection::open(*STORAGE_DATABASE_PATH);
-
         let worker_id = self.id;
 
-        if let Err(e) = conn {
-            error!(target: LOG_TARGET, worker = worker_id, "Failed to open database connection: {:?}", e);
-            return;
-        }
-
-        let mut conn = conn.unwrap();
+        let database_tx = self.database_tx.clone();
 
         self.thread_handle = Some(std::thread::spawn(move || {
             let mut buffer: Vec<Document> = vec![];
@@ -155,12 +159,12 @@ impl EngineTask<Document> for ExtractorWorker {
                 }
 
                 if buffer.len() >= *EXTRACTOR_INSERT_BATCH_SIZE {
-                    Self::flush_buffer(&mut conn, &mut buffer)?;
+                    Self::flush_buffer(database_tx.clone(), &mut buffer)?;
                     last_flush = Instant::now();
                 }
 
                 if !buffer.is_empty() && last_flush.elapsed() >= *EXTRACTOR_FLUSH_INTERVAL {
-                    Self::flush_buffer(&mut conn, &mut buffer)?;
+                    Self::flush_buffer(database_tx.clone(), &mut buffer)?;
                     last_flush = Instant::now();
                 }
             }

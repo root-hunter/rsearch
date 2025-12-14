@@ -2,27 +2,32 @@ use std::thread;
 
 use rsearch::{
     engine::{
-        extractor::Extractor, scanner::{FiltersMode, Scanner, filters::Filter}
+        EngineTask,
+        extractor::Extractor,
+        scanner::{FiltersMode, Scanner, filters::Filter},
     },
-    init_logging, storage::{STORAGE_DATABASE_PATH, StorageEngine},
+    init_logging,
+    storage::{STORAGE_DATABASE_PATH, StorageEngine},
 };
 
 fn main() {
     init_logging();
+    StorageEngine::initialize().expect("Failed to initialize storage engine");
 
-    let mut extractor = Extractor::new();
+    let mut storage = StorageEngine::new();
+    storage.run();
+
+    let mut extractor = Extractor::new(storage.get_channel_sender().clone());
     extractor.init(2);
 
     let channels = extractor.get_channel_senders();
-    
+
     let mut scanner = Scanner::new();
     scanner.add_channel_senders(channels);
 
     let t2 = thread::spawn(move || {
         let conn =
             rusqlite::Connection::open(*STORAGE_DATABASE_PATH).expect("Failed to open database");
-
-        StorageEngine::initialize(&conn).expect("Failed to initialize storage engine");
 
         let mut filter1 = Filter::new();
         filter1.set_case_sensitive(false);
@@ -45,7 +50,5 @@ fn main() {
         // }
     });
 
-    loop {
-        
-    }
+    loop {}
 }

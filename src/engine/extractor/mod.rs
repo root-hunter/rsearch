@@ -9,7 +9,7 @@ use std::{
 
 use crate::{
     engine::{EngineTask, extractor::worker::ExtractorWorker},
-    entities::document::Document,
+    entities::document::Document, storage::commands::StorageCommand,
 };
 use crossbeam::channel;
 use once_cell::sync::Lazy;
@@ -41,12 +41,14 @@ pub enum ExtractorError {
 
 #[derive(Debug)]
 pub struct Extractor {
+    database_tx: crossbeam::channel::Sender<StorageCommand>,
     workers: Vec<ExtractorWorker>,
 }
-
+    
 impl Extractor {
-    pub fn new() -> Self {
+    pub fn new(database_tx: crossbeam::channel::Sender<StorageCommand>) -> Self {
         Extractor {
+            database_tx,
             workers: Vec::new(),
         }
     }
@@ -74,8 +76,10 @@ impl Extractor {
         let index = self.workers.len();
         
         info!(target: LOG_TARGET, "Starting extractor worker {}", index);
+
+        let database_tx = self.database_tx.clone();
         
-        let mut worker = ExtractorWorker::new(index);
+        let mut worker = ExtractorWorker::new(index, database_tx);
         worker.run();
         self.workers.push(worker);
     }

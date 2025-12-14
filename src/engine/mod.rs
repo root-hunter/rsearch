@@ -27,18 +27,9 @@ impl Engine {
             classifier: classifier::Classifier::new(),
         }
     }
-
-    pub fn initialize(&mut self, conn: &rusqlite::Connection) -> Result<(), EngineError> {
-        info!(target: LOG_TARGET, "Engine starting");
-
-        StorageEngine::initialize(conn).map_err(EngineError::StorageError)
-    }
 }
 
 pub trait EngineTask<T> {
-    fn new(id: usize) -> Self
-    where
-        Self: Sized;
     fn run(&mut self);
     fn get_channel_sender(&self) -> &channel::Sender<T>;
     fn get_channel_receiver(&self) -> &channel::Receiver<T>;
