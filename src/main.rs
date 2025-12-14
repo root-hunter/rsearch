@@ -26,9 +26,6 @@ fn main() {
     scanner.add_channel_senders(channels);
 
     let t2 = thread::spawn(move || {
-        let conn =
-            rusqlite::Connection::open(*STORAGE_DATABASE_PATH).expect("Failed to open database");
-
         let mut filter1 = Filter::new();
         filter1.set_case_sensitive(false);
         //filter1.set_filename_contains("report");
