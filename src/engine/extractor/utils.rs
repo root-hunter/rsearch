@@ -1,7 +1,6 @@
-use std::{collections::{BTreeMap, HashMap}, env};
+use std::{collections::BTreeMap, env};
 
 use once_cell::sync::Lazy;
-use tracing::info;
 
 pub const LOG_TARGET: &str = "extractor_utils";
 

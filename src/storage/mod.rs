@@ -3,12 +3,12 @@ pub mod commands;
 use std::env;
 
 use once_cell::sync::Lazy;
-use rusqlite::{Connection, Result};
+use rusqlite::Result;
 use tracing::{error, info, warn};
 
 use crate::{
     engine::EngineTask,
-    entities::document::{self, Document},
+    entities::document::Document,
     storage::commands::StorageCommand,
 };
 

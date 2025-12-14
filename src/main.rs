@@ -7,7 +7,7 @@ use rsearch::{
         scanner::{FiltersMode, Scanner, filters::Filter},
     },
     init_logging,
-    storage::{STORAGE_DATABASE_PATH, StorageEngine},
+    storage::StorageEngine,
 };
 
 fn main() {

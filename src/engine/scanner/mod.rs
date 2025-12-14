@@ -4,7 +4,7 @@ use std::path::Path;
 
 use tracing::{error, info};
 
-use crate::{engine::scanner::filters::{Filter, FilterError}, entities::document::{self, Document, DocumentStatus}};
+use crate::{engine::scanner::filters::{Filter, FilterError}, entities::document::{Document, DocumentStatus}};
 
 const LOG_TARGET: &str = "scanner";
 

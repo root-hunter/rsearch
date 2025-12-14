@@ -2,7 +2,7 @@ use std::time::{Duration, Instant};
 
 use crate::{
     engine::{
-        Engine, EngineTask, EngineTaskWorker,
+        EngineTask, EngineTaskWorker,
         extractor::{
             EXTRACTOR_FLUSH_INTERVAL, EXTRACTOR_INSERT_BATCH_SIZE, ExtractorError,
             formats::{self, FormatExtractor, FormatType},
@@ -10,10 +10,7 @@ use crate::{
         },
     },
     entities::document::{Document, DocumentStatus},
-    storage::{
-        STORAGE_DATABASE_PATH,
-        commands::{CommandSaveBulkDocuments, StorageCommand},
-    },
+    storage::commands::{CommandSaveBulkDocuments, StorageCommand},
 };
 use crossbeam::channel;
 use tracing::{error, info};

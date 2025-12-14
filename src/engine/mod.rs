@@ -1,7 +1,6 @@
 use crossbeam::channel;
-use tracing::info;
 
-use crate::storage::{StorageEngine, StorageError};
+use crate::storage::StorageError;
 
 pub mod classifier;
 pub mod extractor;
