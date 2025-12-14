@@ -17,6 +17,8 @@ use tracing::{error, info};
 
 const LOG_TARGET: &str = "extractor_worker";
 
+const WORKER_RECEIVE_TIMEOUT_MS: u64 = 200;
+
 #[derive(Debug)]
 pub struct ExtractorWorker {
     id: usize,
@@ -96,7 +98,7 @@ impl EngineTask<Document> for ExtractorWorker {
             let mut last_flush = Instant::now();
 
             loop {
-                match receiver.recv_timeout(Duration::from_millis(200)) {
+                match receiver.recv_timeout(Duration::from_millis(WORKER_RECEIVE_TIMEOUT_MS)) {
                     Ok(mut document) => {
                         info!(target: LOG_TARGET, worker_id = worker_id, "Processing document: {:?}", document);
 
@@ -166,7 +168,6 @@ impl EngineTask<Document> for ExtractorWorker {
                 }
             }
             Ok(())
-            // Worker loop would go here
         }));
     }
 }

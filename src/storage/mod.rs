@@ -13,6 +13,7 @@ use crate::{
 };
 
 const LOG_TARGET: &str = "storage";
+const WORKER_RECEIVE_TIMEOUT_MS: u64 = 100;
 
 pub static STORAGE_DATABASE_PATH: Lazy<&'static str> = Lazy::new(|| {
     Box::leak(
@@ -126,7 +127,7 @@ impl EngineTask<StorageCommand> for StorageEngine {
             info!(target: LOG_TARGET, "StorageEngine worker started");
 
             loop {
-                if let Ok(command) = receiver.recv_timeout(std::time::Duration::from_millis(100)) {
+                if let Ok(command) = receiver.recv_timeout(std::time::Duration::from_millis(WORKER_RECEIVE_TIMEOUT_MS)) {
                     match command {
                         StorageCommand::SaveDocument(command) => {
                             let mut document = command.document;
