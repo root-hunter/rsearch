@@ -4,7 +4,7 @@ use std::path::Path;
 
 use tracing::{error, info};
 
-use crate::{engine::{Sender, scanner::filters::{Filter, FilterError}}, entities::document::{Document, DocumentStatus}};
+use crate::{engine::{PipelineStage, Sender, extractor::Extractor, scanner::filters::{Filter, FilterError}}, entities::document::{Document, DocumentStatus}};
 
 const LOG_TARGET: &str = "scanner";
 
@@ -20,20 +20,20 @@ pub enum FiltersMode {
     Or,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Scanner {
+    extractor: Extractor,
     filters: Vec<Filter>,
     filters_mode: FiltersMode,
-    channels: Vec<Sender<Document>>,
     last_channel_index: usize,
 }
 
 impl Scanner {
-    pub fn new() -> Self {
+    pub fn new(extractor: Extractor) -> Self {
         Scanner {
+            extractor,
             filters_mode: FiltersMode::And,
             filters: Vec::new(),
-            channels: Vec::new(),
             last_channel_index: 0,
         }
     }
@@ -64,26 +64,6 @@ impl Scanner {
         }
     }
 
-    pub fn add_channel_sender(&mut self, sender: Sender<Document>) {
-        self.channels.push(sender);
-    }
-
-    pub fn add_channel_senders(&mut self, senders: Vec<Sender<Document>>) {
-        for sender in senders {
-            self.add_channel_sender(sender);
-        }
-    }
-
-    pub fn remove_channel_sender(&mut self, index: usize) {
-        if index < self.channels.len() {
-            self.channels.remove(index);
-        }
-    }
-
-    pub fn clear_channel_senders(&mut self) {
-        self.channels.clear();
-    }
-
     pub fn set_filters_mode(&mut self, mode: FiltersMode) {
         self.filters_mode = mode;
     }
@@ -93,7 +73,7 @@ impl Scanner {
     }
 
     fn process_document(&mut self, document: Document) {
-        let channel = self.channels.get(self.last_channel_index);
+        let channel = self.extractor.get_sender_at(self.last_channel_index);
         
         channel.as_ref().map(|tx| {
             if let Err(e) = tx.send(document.clone()) {
@@ -101,7 +81,7 @@ impl Scanner {
             }
         });
 
-        self.last_channel_index = (self.last_channel_index + 1) % self.channels.len();
+        self.last_channel_index = (self.last_channel_index + 1) % self.extractor.get_workers_len();
     }
 
     pub fn scan_folder(&mut self, path: &str) {

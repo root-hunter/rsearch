@@ -155,7 +155,7 @@ impl EngineTask<Document> for ExtractorWorker {
                     }
                     Err(e) => {
                         error!(target: LOG_TARGET, "Channel receive error: {:?}", e);
-                        break;
+                        //break;
                     }
                 }
 

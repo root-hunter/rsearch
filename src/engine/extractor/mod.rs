@@ -54,14 +54,18 @@ impl Extractor {
 }
     
 impl PipelineStage<Document> for Extractor {
-    fn get_channel_senders(&self) -> Vec<Sender<Document>> {
+    fn get_workers_len(&self) -> usize {
+        self.workers.len()
+    }
+
+    fn get_senders(&self) -> Vec<Sender<Document>> {
         self.workers
             .iter()
             .map(|worker| worker.get_channel_sender().clone())
             .collect()
     }
 
-    fn get_channel_sender_at(&self, index: usize) -> Option<Sender<Document>> {
+    fn get_sender_at(&self, index: usize) -> Option<Sender<Document>> {
         self.workers
             .get(index)
             .map(|worker| worker.get_channel_sender().clone())
@@ -78,4 +82,6 @@ impl PipelineStage<Document> for Extractor {
         worker.run();
         self.workers.push(worker);
     }
+
+    
 }

@@ -35,6 +35,16 @@ impl Engine {
     }
 }
 
+pub trait Stage<T> {
+    fn get_channel_senders(&self) -> Vec<Sender<T>> {
+        todo!("Implement get_channel_senders")
+    }
+
+    fn get_channel_sender_at(&self, index: usize) -> Option<Sender<T>> {
+        todo!("Implement get_channel_sender_at")
+    }
+}
+
 pub trait PipelineStage<T> {
     fn init(&mut self, num_workers: usize) {
         for _ in 0..num_workers {
@@ -42,9 +52,11 @@ pub trait PipelineStage<T> {
         }
     }
 
-    fn get_channel_senders(&self) -> Vec<Sender<T>>;
+    fn get_senders(&self) -> Vec<Sender<T>>;
 
-    fn get_channel_sender_at(&self, index: usize) -> Option<Sender<T>>;
+    fn get_sender_at(&self, index: usize) -> Option<Sender<T>>;
+
+    fn get_workers_len(&self) -> usize;
 
     fn add_worker(&mut self);
 }

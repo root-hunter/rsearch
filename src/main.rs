@@ -15,16 +15,13 @@ fn main() {
     let mut storage = StorageEngine::new();
     storage.run();
 
+    let mut classifier  = Classifier::new();
+    classifier.init(2);
+  
     let mut extractor = Extractor::new(storage.get_channel_sender().clone());
     extractor.init(2);
 
-    let mut classifier  = Classifier::new();
-    classifier.init(2);
-
-    let channels = extractor.get_channel_senders();
-
-    let mut scanner = Scanner::new();
-    scanner.add_channel_senders(channels);
+    let mut scanner = Scanner::new(extractor);
 
     let _t2 = thread::spawn(move || {
         let mut filter1 = Filter::new();
