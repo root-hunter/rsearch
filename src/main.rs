@@ -1,4 +1,4 @@
-use std::{thread, time::Instant};
+use std::thread;
 
 use rsearch::{
     engine::{
@@ -26,7 +26,7 @@ fn main() {
     let mut scanner = Scanner::new();
     scanner.add_channel_senders(channels);
 
-    let t2 = thread::spawn(move || {
+    let _t2 = thread::spawn(move || {
         let mut filter1 = Filter::new();
         filter1.set_case_sensitive(false);
         //filter1.set_filename_contains("report");

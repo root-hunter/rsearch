@@ -1,6 +1,6 @@
 use crossbeam::channel;
 
-use crate::{entities::document::Document, storage::StorageError};
+use crate::storage::StorageError;
 
 pub mod classifier;
 pub mod extractor;

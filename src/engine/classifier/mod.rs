@@ -1,6 +1,5 @@
 pub mod worker;
 
-use tracing::info;
 
 use crate::{engine::{EngineTask, PipelineStage, Sender, classifier::worker::ClassifierWorker}, entities::document::Document, storage::commands::StorageCommand};
 

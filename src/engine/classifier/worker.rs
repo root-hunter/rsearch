@@ -1,7 +1,7 @@
 use tracing::info;
 
 use crate::{
-    engine::{Engine, EngineTask, EngineTaskWorker, Receiver, Sender, unbounded_channel},
+    engine::{EngineTask, EngineTaskWorker, Receiver, Sender, unbounded_channel},
     entities::document::Document,
     storage::commands::StorageCommand,
 };
