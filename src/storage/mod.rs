@@ -7,7 +7,7 @@ use rusqlite::Result;
 use tracing::{error, info, warn};
 
 use crate::{
-    engine::EngineTask,
+    engine::{EngineTask, Receiver, Sender, unbounded_channel},
     entities::document::Document,
     storage::commands::StorageCommand,
 };
@@ -31,14 +31,14 @@ pub enum StorageError {
 
 #[derive(Debug)]
 pub struct StorageEngine {
-    channel_tx: crossbeam::channel::Sender<StorageCommand>,
-    channel_rx: crossbeam::channel::Receiver<StorageCommand>,
+    channel_tx: Sender<StorageCommand>,
+    channel_rx: Receiver<StorageCommand>,
     thread_handle: Option<std::thread::JoinHandle<Result<(), StorageError>>>,
 }
 
 impl StorageEngine {
     pub fn new() -> Self {
-        let (tx, rx) = crossbeam::channel::unbounded::<StorageCommand>();
+        let (tx, rx) = unbounded_channel::<StorageCommand>();
 
         StorageEngine {
             channel_tx: tx,
@@ -100,11 +100,11 @@ impl StorageEngine {
 }
 
 impl EngineTask<StorageCommand> for StorageEngine {
-    fn get_channel_sender(&self) -> &crossbeam::channel::Sender<StorageCommand> {
+    fn get_channel_sender(&self) -> &Sender<StorageCommand> {
         &self.channel_tx
     }
 
-    fn get_channel_receiver(&self) -> &crossbeam::channel::Receiver<StorageCommand> {
+    fn get_channel_receiver(&self) -> &Receiver<StorageCommand> {
         &self.channel_rx
     }
 

@@ -8,10 +8,9 @@ use std::{
 };
 
 use crate::{
-    engine::{EngineTask, extractor::worker::ExtractorWorker},
+    engine::{EngineTask, Sender, extractor::worker::ExtractorWorker},
     entities::document::Document, storage::commands::StorageCommand,
 };
-use crossbeam::channel;
 use once_cell::sync::Lazy;
 use tracing::info;
 
@@ -41,12 +40,12 @@ pub enum ExtractorError {
 
 #[derive(Debug)]
 pub struct Extractor {
-    database_tx: crossbeam::channel::Sender<StorageCommand>,
+    database_tx: Sender<StorageCommand>,
     workers: Vec<ExtractorWorker>,
 }
     
 impl Extractor {
-    pub fn new(database_tx: crossbeam::channel::Sender<StorageCommand>) -> Self {
+    pub fn new(database_tx: Sender<StorageCommand>) -> Self {
         Extractor {
             database_tx,
             workers: Vec::new(),
@@ -59,14 +58,14 @@ impl Extractor {
         }
     }
 
-    pub fn get_channel_senders(&self) -> Vec<channel::Sender<Document>> {
+    pub fn get_channel_senders(&self) -> Vec<Sender<Document>> {
         self.workers
             .iter()
             .map(|worker| worker.get_channel_sender().clone())
             .collect()
     }
 
-    pub fn get_channel_sender_at(&self, index: usize) -> Option<channel::Sender<Document>> {
+    pub fn get_channel_sender_at(&self, index: usize) -> Option<Sender<Document>> {
         self.workers
             .get(index)
             .map(|worker| worker.get_channel_sender().clone())

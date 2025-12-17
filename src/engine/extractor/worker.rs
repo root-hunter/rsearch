@@ -2,17 +2,15 @@ use std::time::{Duration, Instant};
 
 use crate::{
     engine::{
-        EngineTask, EngineTaskWorker,
-        extractor::{
+        ChannelRecvTimeoutError, EngineTask, EngineTaskWorker, Receiver, Sender, extractor::{
             EXTRACTOR_FLUSH_INTERVAL, EXTRACTOR_INSERT_BATCH_SIZE, ExtractorError,
             formats::{self, FormatExtractor, FormatType},
             utils::build_text_content,
-        },
+        }, unbounded_channel
     },
     entities::document::{Document, DocumentStatus},
     storage::commands::{CommandSaveBulkDocuments, StorageCommand},
 };
-use crossbeam::channel;
 use tracing::{error, info};
 
 const LOG_TARGET: &str = "extractor_worker";
@@ -22,15 +20,15 @@ const WORKER_RECEIVE_TIMEOUT_MS: u64 = 200;
 #[derive(Debug)]
 pub struct ExtractorWorker {
     id: usize,
-    channel_tx: crossbeam::channel::Sender<Document>,
-    channel_rx: crossbeam::channel::Receiver<Document>,
-    database_tx: crossbeam::channel::Sender<StorageCommand>,
+    channel_tx: Sender<Document>,
+    channel_rx: Receiver<Document>,
+    database_tx: Sender<StorageCommand>,
     pub thread_handle: Option<std::thread::JoinHandle<Result<(), ExtractorError>>>,
 }
 
 impl ExtractorWorker {
-    pub fn new(id: usize, database_tx: crossbeam::channel::Sender<StorageCommand>) -> Self {
-        let (tx, rx) = channel::unbounded::<Document>();
+    pub fn new(id: usize, database_tx: Sender<StorageCommand>) -> Self {
+        let (tx, rx) = unbounded_channel::<Document>();
 
         ExtractorWorker {
             id,
@@ -41,12 +39,12 @@ impl ExtractorWorker {
         }
     }
 
-    pub fn get_database_tx(&self) -> &crossbeam::channel::Sender<StorageCommand> {
+    pub fn get_database_tx(&self) -> &Sender<StorageCommand> {
         &self.database_tx
     }
 
     pub fn flush_buffer(
-        database_tx: crossbeam::channel::Sender<StorageCommand>,
+        database_tx: Sender<StorageCommand>,
         buffer: &mut Vec<Document>,
     ) -> Result<(), ExtractorError> {
         info!(
@@ -77,11 +75,11 @@ impl EngineTaskWorker for ExtractorWorker {
 }
 
 impl EngineTask<Document> for ExtractorWorker {
-    fn get_channel_sender(&self) -> &channel::Sender<Document> {
+    fn get_channel_sender(&self) -> &Sender<Document> {
         &self.channel_tx
     }
 
-    fn get_channel_receiver(&self) -> &channel::Receiver<Document> {
+    fn get_channel_receiver(&self) -> &Receiver<Document> {
         &self.channel_rx
     }
 
@@ -148,7 +146,7 @@ impl EngineTask<Document> for ExtractorWorker {
                             }
                         }
                     }
-                    Err(channel::RecvTimeoutError::Timeout) => {
+                    Err(ChannelRecvTimeoutError::Timeout) => {
                         // Timeout occurred, check if we need to flush
                     }
                     Err(e) => {

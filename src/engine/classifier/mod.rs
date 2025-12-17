@@ -1,3 +1,5 @@
+pub mod worker;
+
 use tracing::info;
 
 const LOG_TARGET: &str = "classifier";

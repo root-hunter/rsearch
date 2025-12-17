@@ -4,7 +4,7 @@ use std::path::Path;
 
 use tracing::{error, info};
 
-use crate::{engine::scanner::filters::{Filter, FilterError}, entities::document::{Document, DocumentStatus}};
+use crate::{engine::{Sender, scanner::filters::{Filter, FilterError}}, entities::document::{Document, DocumentStatus}};
 
 const LOG_TARGET: &str = "scanner";
 
@@ -24,7 +24,7 @@ pub enum FiltersMode {
 pub struct Scanner {
     filters: Vec<Filter>,
     filters_mode: FiltersMode,
-    channels: Vec<crossbeam::channel::Sender<Document>>,
+    channels: Vec<Sender<Document>>,
     last_channel_index: usize,
 }
 
@@ -64,11 +64,11 @@ impl Scanner {
         }
     }
 
-    pub fn add_channel_sender(&mut self, sender: crossbeam::channel::Sender<Document>) {
+    pub fn add_channel_sender(&mut self, sender: Sender<Document>) {
         self.channels.push(sender);
     }
 
-    pub fn add_channel_senders(&mut self, senders: Vec<crossbeam::channel::Sender<Document>>) {
+    pub fn add_channel_senders(&mut self, senders: Vec<Sender<Document>>) {
         for sender in senders {
             self.add_channel_sender(sender);
         }

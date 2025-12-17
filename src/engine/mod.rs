@@ -1,6 +1,6 @@
 use crossbeam::channel;
 
-use crate::storage::StorageError;
+use crate::{entities::document::Document, storage::StorageError};
 
 pub mod classifier;
 pub mod extractor;
@@ -8,6 +8,13 @@ pub mod scanner;
 pub mod utils;
 
 const LOG_TARGET: &str = "engine";
+
+pub type Sender<T> = crossbeam::channel::Sender<T>;
+pub type Receiver<T> = crossbeam::channel::Receiver<T>;
+pub fn unbounded_channel<T>() -> (Sender<T>, Receiver<T>) {
+    crossbeam::channel::unbounded::<T>()
+}
+pub type ChannelRecvTimeoutError = crossbeam::channel::RecvTimeoutError;
 
 #[derive(Debug)]
 pub enum EngineError {
