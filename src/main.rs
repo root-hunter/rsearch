@@ -1,10 +1,8 @@
-use std::thread;
+use std::{thread, time::Instant};
 
 use rsearch::{
     engine::{
-        EngineTask,
-        extractor::Extractor,
-        scanner::{FiltersMode, Scanner, filters::Filter},
+        EngineTask, PipelineStage, extractor::Extractor, scanner::{FiltersMode, Scanner, filters::Filter}
     },
     init_logging,
     storage::StorageEngine,

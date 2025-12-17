@@ -8,7 +8,7 @@ use std::{
 };
 
 use crate::{
-    engine::{EngineTask, Sender, extractor::worker::ExtractorWorker},
+    engine::{EngineTask, PipelineStage, Sender, extractor::worker::ExtractorWorker},
     entities::document::Document, storage::commands::StorageCommand,
 };
 use once_cell::sync::Lazy;
@@ -43,7 +43,7 @@ pub struct Extractor {
     database_tx: Sender<StorageCommand>,
     workers: Vec<ExtractorWorker>,
 }
-    
+
 impl Extractor {
     pub fn new(database_tx: Sender<StorageCommand>) -> Self {
         Extractor {
@@ -51,27 +51,23 @@ impl Extractor {
             workers: Vec::new(),
         }
     }
-
-    pub fn init(&mut self, num_workers: usize) {
-        for _ in 0..num_workers {
-            self.add_worker();
-        }
-    }
-
-    pub fn get_channel_senders(&self) -> Vec<Sender<Document>> {
+}
+    
+impl PipelineStage<Document> for Extractor {
+    fn get_channel_senders(&self) -> Vec<Sender<Document>> {
         self.workers
             .iter()
             .map(|worker| worker.get_channel_sender().clone())
             .collect()
     }
 
-    pub fn get_channel_sender_at(&self, index: usize) -> Option<Sender<Document>> {
+    fn get_channel_sender_at(&self, index: usize) -> Option<Sender<Document>> {
         self.workers
             .get(index)
             .map(|worker| worker.get_channel_sender().clone())
     }
 
-    pub fn add_worker(&mut self) {
+    fn add_worker(&mut self) {
         let index = self.workers.len();
         
         info!(target: LOG_TARGET, "Starting extractor worker {}", index);
