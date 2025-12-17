@@ -68,13 +68,17 @@ impl ExtractorWorker {
     }
 }
 
-impl EngineTaskWorker for ExtractorWorker {
+impl EngineTaskWorker<Document> for ExtractorWorker {
     fn get_id(&self) -> usize {
         self.id
     }
 }
 
 impl EngineTask<Document> for ExtractorWorker {
+    fn name(&self) -> &str {
+        LOG_TARGET
+    }
+
     fn get_channel_sender(&self) -> &Sender<Document> {
         &self.channel_tx
     }

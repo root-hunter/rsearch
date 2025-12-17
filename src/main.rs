@@ -2,7 +2,7 @@ use std::{thread, time::Instant};
 
 use rsearch::{
     engine::{
-        EngineTask, PipelineStage, extractor::Extractor, scanner::{FiltersMode, Scanner, filters::Filter}
+        EngineTask, PipelineStage, classifier::Classifier, extractor::Extractor, scanner::{FiltersMode, Scanner, filters::Filter}
     },
     init_logging,
     storage::StorageEngine,
@@ -17,6 +17,9 @@ fn main() {
 
     let mut extractor = Extractor::new(storage.get_channel_sender().clone());
     extractor.init(2);
+
+    let mut classifier  = Classifier::new();
+    classifier.init(2);
 
     let channels = extractor.get_channel_senders();
 

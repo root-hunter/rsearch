@@ -50,11 +50,12 @@ pub trait PipelineStage<T> {
 }
 
 pub trait EngineTask<T> {
+    fn name(&self) -> &str;
     fn run(&mut self);
     fn get_channel_sender(&self) -> &channel::Sender<T>;
     fn get_channel_receiver(&self) -> &channel::Receiver<T>;
 }
 
-pub trait EngineTaskWorker {
+pub trait EngineTaskWorker<T>: EngineTask<T> {
     fn get_id(&self) -> usize;
 }

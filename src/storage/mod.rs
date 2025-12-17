@@ -167,4 +167,8 @@ impl EngineTask<StorageCommand> for StorageEngine {
         
         self.thread_handle = Some(handle);
     }
+    
+    fn name(&self) -> &str {
+        LOG_TARGET
+    }
 }
