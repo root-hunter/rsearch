@@ -11,7 +11,7 @@ use crate::{
             formats::{self, DataExtracted, FileExtractor, FormatType},
             utils::build_text_content,
         },
-        scanner::{self, Scanner},
+        scanner::Scanner,
         unbounded_channel,
     },
     entities::document::{Document, DocumentStatus},

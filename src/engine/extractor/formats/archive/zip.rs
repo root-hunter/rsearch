@@ -1,6 +1,6 @@
 use tracing::info;
 
-use crate::engine::{extractor::formats::{Archive, DataExtracted, FileExtractor}, scanner::Scanner};
+use crate::engine::{extractor::formats::{DataExtracted, FileExtractor}, scanner::Scanner};
 
 const LOG_TARGET: &str = "extractor_zip";
 
