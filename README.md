@@ -39,3 +39,8 @@ cd vendor/pdfium
 wget https://github.com/bblanchon/pdfium-binaries/releases/latest/download/pdfium-linux-x64.tgz
 tar -xzf pdfium-linux-x64.tgz
 ```
+
+
+DEV NOTES
+
+- 11.4 MB DB with zip and pdf search

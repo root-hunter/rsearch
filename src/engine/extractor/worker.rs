@@ -4,9 +4,9 @@ use crate::{
     engine::{
         ChannelRecvTimeoutError, EngineTask, EngineTaskWorker, Receiver, Sender, extractor::{
             EXTRACTOR_FLUSH_INTERVAL, EXTRACTOR_INSERT_BATCH_SIZE, ExtractorError,
-            formats::{self, FormatExtractor, FormatType},
+            formats::{self, ArchiveExtractor, FileExtractor, FormatType},
             utils::build_text_content,
-        }, unbounded_channel
+        }, scanner::{self, Scanner}, unbounded_channel
     },
     entities::document::{Document, DocumentStatus},
     storage::commands::{CommandSaveBulkDocuments, StorageCommand},
@@ -23,11 +23,12 @@ pub struct ExtractorWorker {
     channel_tx: Sender<Document>,
     channel_rx: Receiver<Document>,
     database_tx: Sender<StorageCommand>,
+    scanner: Scanner,
     pub thread_handle: Option<std::thread::JoinHandle<Result<(), ExtractorError>>>,
 }
 
 impl ExtractorWorker {
-    pub fn new(id: usize, database_tx: Sender<StorageCommand>) -> Self {
+    pub fn new(id: usize, database_tx: Sender<StorageCommand>, scanner: Scanner) -> Self {
         let (tx, rx) = unbounded_channel::<Document>();
 
         ExtractorWorker {
@@ -35,6 +36,7 @@ impl ExtractorWorker {
             database_tx,
             channel_tx: tx,
             channel_rx: rx,
+            scanner: scanner,
             thread_handle: None,
         }
     }
@@ -94,6 +96,7 @@ impl EngineTask<Document> for ExtractorWorker {
         let worker_id = self.id;
 
         let database_tx = self.database_tx.clone();
+        let scanner = self.scanner.clone();
 
         self.thread_handle = Some(std::thread::spawn(move || {
             let mut buffer: Vec<Document> = vec![];
@@ -155,6 +158,31 @@ impl EngineTask<Document> for ExtractorWorker {
                                     }
                                     Err(e) => {
                                         error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract text from DOCX: {:?} ({})", e, document.get_path());
+                                    }
+                                }
+                            }
+
+                            FormatType::Archive(a) => {
+                                match a {
+                                    formats::Archive::Zip => {
+                                        let extractor = formats::archive::zip::ZipExtractor::new(scanner.clone());
+                                        
+                                        match extractor.extract_files(document.get_path()) {
+                                            Ok(text) => {
+                                                info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text from ZIP, length: {}", text.len());
+
+                                                let content: String = build_text_content(text);
+                                                info!(target: LOG_TARGET, "Extracted text distribution: {:?}", content);
+
+                                                document.set_content(content);
+                                                document.set_status(DocumentStatus::Extracted);
+
+                                                buffer.push(document);
+                                            }
+                                            Err(e) => {
+                                                error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract text from ZIP: {:?} ({})", e, document.get_path());
+                                            }
+                                        }
                                     }
                                 }
                             }

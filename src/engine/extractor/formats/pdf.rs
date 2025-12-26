@@ -3,7 +3,7 @@ use std::env;
 use once_cell::sync::Lazy;
 use pdfium_render::prelude::*;
 
-use crate::{engine::extractor::formats::FormatExtractor};
+use crate::{engine::extractor::formats::FileExtractor};
 
 pub static PDFIUM_LIB_PATH: Lazy<&'static str> = Lazy::new(|| {
     Box::leak(
@@ -15,7 +15,7 @@ pub static PDFIUM_LIB_PATH: Lazy<&'static str> = Lazy::new(|| {
 
 pub struct PdfExtractor;
 
-impl FormatExtractor for PdfExtractor {
+impl FileExtractor for PdfExtractor {
     fn extract_text(&self, path: &str) -> Result<String, Box<dyn std::error::Error>> {
         let lib = if PDFIUM_LIB_PATH.is_empty() {
             Pdfium::bind_to_system_library()?

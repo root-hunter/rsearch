@@ -8,7 +8,7 @@ use std::{
 };
 
 use crate::{
-    engine::{EngineTask, PipelineStage, Sender, extractor::worker::ExtractorWorker},
+    engine::{EngineTask, PipelineStage, Sender, extractor::worker::ExtractorWorker, scanner::Scanner},
     entities::document::Document, storage::commands::StorageCommand,
 };
 use once_cell::sync::Lazy;
@@ -40,13 +40,15 @@ pub enum ExtractorError {
 
 #[derive(Debug)]
 pub struct Extractor {
+    scanner: Scanner,
     database_tx: Sender<StorageCommand>,
     workers: Vec<ExtractorWorker>,
 }
 
 impl Extractor {
-    pub fn new(database_tx: Sender<StorageCommand>) -> Self {
+    pub fn new(database_tx: Sender<StorageCommand>, scanner: Scanner) -> Self {
         Extractor {
+            scanner,
             database_tx,
             workers: Vec::new(),
         }
@@ -74,7 +76,7 @@ impl PipelineStage<Document> for Extractor {
 
         let database_tx = self.database_tx.clone();
         
-        let mut worker = ExtractorWorker::new(index, database_tx);
+        let mut worker = ExtractorWorker::new(index, database_tx, self.scanner.clone());
         worker.run();
         self.workers.push(worker);
     }

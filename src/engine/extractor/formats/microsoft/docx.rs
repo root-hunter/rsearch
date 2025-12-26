@@ -1,4 +1,4 @@
-use crate::engine::extractor::formats::FormatExtractor;
+use crate::engine::extractor::formats::FileExtractor;
 
 use zip::ZipArchive;
 use quick_xml::Reader;
@@ -8,7 +8,7 @@ use std::io::Read;
 
 pub struct DocxExtractor;
 
-impl FormatExtractor for DocxExtractor {
+impl FileExtractor for DocxExtractor {
     fn extract_text(&self, path: &str) -> Result<String, Box<dyn std::error::Error>> {
         let file = File::open(path)?;
         let mut zip = ZipArchive::new(file)?;

@@ -3,3 +3,4 @@
 - Demonize the software
 - Create API to call command on the demon
 - Create a CLI interface that use the deamon APIs
+- Archive searching (zip, xz, ...)

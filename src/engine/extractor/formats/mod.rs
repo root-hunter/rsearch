@@ -1,12 +1,23 @@
 pub mod text;
 pub mod pdf;
 pub mod microsoft;
+pub mod archive;
+
+#[derive(Debug, Clone)]
+pub enum Archive {
+    Zip,
+    // Tar,
+    // Rar,
+    // SevenZ,
+    // Unknown,
+}
 
 #[derive(Debug, Clone)]
 pub enum FormatType {
     Pdf,
     Docx,
     Text,
+    Archive(Archive),
     Unknown,
 }
 
@@ -16,11 +27,19 @@ impl FormatType {
             "pdf" => FormatType::Pdf,
             "docx" => FormatType::Docx,
             "txt" => FormatType::Text,
+            "zip" => FormatType::Archive(Archive::Zip),
+            // "tar" => FormatType::Archive(Archive::Tar),
+            // "rar" => FormatType::Archive(Archive::Rar),
+            // "7z" => FormatType::Archive(Archive::SevenZ),
             _ => FormatType::Unknown,
         }
     }
 }
 
-pub trait FormatExtractor {
+pub trait FileExtractor {
     fn extract_text(&self, path: &str) -> Result<String, Box<dyn std::error::Error>>;
+}
+
+pub trait ArchiveExtractor {
+    fn extract_files(&self, path: &str) -> Result<String, Box<dyn std::error::Error>>;
 }
