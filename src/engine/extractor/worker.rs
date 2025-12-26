@@ -126,27 +126,28 @@ impl EngineTask<Document> for ExtractorWorker {
                 match receiver.recv_timeout(Duration::from_millis(WORKER_RECEIVE_TIMEOUT_MS)) {
                     Ok(mut document) => {
                         info!(target: LOG_TARGET, worker_id = worker_id, "Processing document: {:?}", document);
-                        
+
                         let document_format = document.get_format_type();
 
                         let extractor = extractors_map.get(&document_format);
 
                         if let Some(extractor) = extractor {
                             match extractor.extract(document.get_path()) {
-                                Ok(data_extracted) => {
-                                    match data_extracted {
-                                        DataExtracted::Text(text) => {
-                                            info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text, length: {}", text.len());
+                                Ok(data_extracted) => match data_extracted {
+                                    DataExtracted::Text(text) => {
+                                        info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text, length: {}", text.len());
 
-                                            let content = build_text_content(text);
+                                        let content = build_text_content(text);
 
-                                            document.set_content(content);
-                                            document.set_status(DocumentStatus::Extracted);
+                                        document.set_content(content);
+                                        document.set_status(DocumentStatus::Extracted);
 
-                                            buffer.push(document);
-                                        }
+                                        buffer.push(document);
                                     }
-                                }
+                                    _ => {
+                                        error!(target: LOG_TARGET, worker_id = worker_id, "Unsupported extracted data type for document: {:?}", document);
+                                    }
+                                },
                                 Err(e) => {
                                     error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract text: {:?} ({})", e, document.get_path());
                                 }

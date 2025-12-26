@@ -1,3 +1,5 @@
+use crate::entities::document::Document;
+
 pub mod text;
 pub mod pdf;
 pub mod microsoft;
@@ -39,6 +41,7 @@ impl FormatType {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DataExtracted {
     Text(String),
+    Documents(Vec<Document>),
 }
 
 pub trait FileExtractor {
