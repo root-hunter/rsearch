@@ -1,4 +1,4 @@
-use crate::{engine::Sender, entities::document::Document, storage::StorageError};
+use crate::{engine::{Sender, scanner::ScannedDocument}, entities::document::Document, storage::StorageError};
 
 #[derive(Debug, Clone)]
 pub struct CommandSaveDocument {
@@ -8,7 +8,7 @@ pub struct CommandSaveDocument {
 
 #[derive(Debug, Clone)]
 pub struct  CommandSaveBulkDocuments {
-    pub documents: Vec<Document>,
+    pub documents: Vec<ScannedDocument>,
     pub resp_tx: Option<Sender<Result<(), StorageError>>>,
 }
 

@@ -8,7 +8,7 @@ use std::{
 };
 
 use crate::{
-    engine::{EngineTask, PipelineStage, Sender, extractor::worker::ExtractorWorker, scanner::Scanner},
+    engine::{EngineTask, PipelineStage, Sender, extractor::worker::ExtractorWorker, scanner::{ScannedDocument, Scanner}},
     entities::document::Document, storage::commands::StorageCommand,
 };
 use once_cell::sync::Lazy;
@@ -55,15 +55,15 @@ impl Extractor {
     }
 }
     
-impl PipelineStage<Document> for Extractor {
-    fn get_channel_senders(&self) -> Vec<Sender<Document>> {
+impl PipelineStage<ScannedDocument> for Extractor {
+    fn get_channel_senders(&self) -> Vec<Sender<ScannedDocument>> {
         self.workers
             .iter()
             .map(|worker| worker.get_channel_sender().clone())
             .collect()
     }
 
-    fn get_channel_sender_at(&self, index: usize) -> Option<Sender<Document>> {
+    fn get_channel_sender_at(&self, index: usize) -> Option<Sender<ScannedDocument>> {
         self.workers
             .get(index)
             .map(|worker| worker.get_channel_sender().clone())

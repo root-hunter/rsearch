@@ -182,12 +182,12 @@ impl EngineTask<StorageCommand> for StorageEngine {
                         }
                         StorageCommand::SaveBulkDocuments(command) => {
                             let documents = command.documents;
+                
                             info!(target: LOG_TARGET, "Saving bulk documents: {:?}", documents);
 
                             if let Err(e) = container::Container::update_cache_from_documents(
                                 &mut conn,
                                 &documents,
-                                container::ContainerType::Folder,
                                 &mut container_cache,
                             ) {
                                 error!(target: LOG_TARGET, "Failed to update container cache from documents: {:?}", e);

@@ -1,6 +1,6 @@
 use std::{collections::HashMap, path};
 
-use crate::entities::document::Document;
+use crate::{engine::scanner::ScannedDocument, entities::document::Document};
 
 #[derive(Debug)]
 pub enum ContainerError {
@@ -35,12 +35,14 @@ impl Container {
 
     pub fn update_cache_from_documents(
         conn: &mut rusqlite::Connection,
-        documents: &[Document],
-        container_type: ContainerType,
+        documents: &[ScannedDocument],
         cache: &mut HashMap<String, Container>,
     ) -> Result<(), ContainerError> {
-        for doc in documents {
-            let path = doc.get_path();
+        for scanned in documents {
+            let document = scanned.document.clone();
+            let container_type = scanned.container_type.clone();
+            
+            let path = document.get_path();
             let path = path::Path::new(&path);
             if let Some(parent) = path.parent() {
                 let container_path = parent.to_string_lossy().to_string();

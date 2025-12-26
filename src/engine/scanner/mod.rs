@@ -4,7 +4,7 @@ use std::path::Path;
 
 use tracing::{error, info};
 
-use crate::{engine::{Sender, scanner::filters::{Filter, FilterError}}, entities::document::{Document, DocumentStatus}};
+use crate::{engine::{Sender, scanner::filters::{Filter, FilterError}}, entities::{container::ContainerType, document::{Document, DocumentStatus}}};
 
 const LOG_TARGET: &str = "scanner";
 
@@ -21,10 +21,16 @@ pub enum FiltersMode {
 }
 
 #[derive(Debug, Clone)]
+pub struct ScannedDocument {
+    pub container_type: ContainerType, 
+    pub document: Document,
+}
+
+#[derive(Debug, Clone)]
 pub struct Scanner {
     filters: Vec<Filter>,
     filters_mode: FiltersMode,
-    channels: Vec<Sender<Document>>,
+    channels: Vec<Sender<ScannedDocument>>,
     last_channel_index: usize,
 }
 
@@ -64,11 +70,11 @@ impl Scanner {
         }
     }
 
-    pub fn add_channel_sender(&mut self, sender: Sender<Document>) {
+    pub fn add_channel_sender(&mut self, sender: Sender<ScannedDocument>) {
         self.channels.push(sender);
     }
 
-    pub fn add_channel_senders(&mut self, senders: Vec<Sender<Document>>) {
+    pub fn add_channel_senders(&mut self, senders: Vec<Sender<ScannedDocument>>) {
         for sender in senders {
             self.add_channel_sender(sender);
         }
@@ -96,7 +102,10 @@ impl Scanner {
         let channel = self.channels.get(self.last_channel_index);
         
         channel.as_ref().map(|tx| {
-            if let Err(e) = tx.send(document.clone()) {
+            if let Err(e) = tx.send(ScannedDocument {
+                container_type: ContainerType::Folder, // You might want to set this appropriately
+                document: document.clone(),
+            }) {
                 error!(target: LOG_TARGET, "Failed to send document to extractor: {:?}", e);
             }
         });

@@ -2,7 +2,7 @@ use std::{collections::HashMap, path::Path};
 
 use tracing::info;
 
-use crate::{engine::extractor::formats::FormatType, entities::container::Container};
+use crate::{engine::{extractor::formats::FormatType, scanner::ScannedDocument}, entities::container::Container};
 
 const LOG_TARGET: &str = "document";
 
@@ -179,13 +179,15 @@ impl Document {
 
     pub fn save_bulk(
         conn: &mut rusqlite::Connection,
-        documents: Vec<Document>,
+        documents: Vec<ScannedDocument>,
         container_cache: &mut HashMap<String, Container>,
     ) -> Result<(), DocumentError> {
         let tx = conn.transaction().map_err(DocumentError::DatabaseError)?;
         let count = documents.len();
 
-        for mut document in documents {
+        for mut scanned in documents {
+            let document = &mut scanned.document;
+
             let container_path = Path::new(&document.path)
                 .parent()
                 .map(|p| p.to_string_lossy().to_string())
