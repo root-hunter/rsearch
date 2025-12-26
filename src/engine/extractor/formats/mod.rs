@@ -1,3 +1,4 @@
+pub mod text;
 pub mod pdf;
 pub mod microsoft;
 
@@ -5,7 +6,7 @@ pub mod microsoft;
 pub enum FormatType {
     Pdf,
     Docx,
-    Txt,
+    Text,
     Unknown,
 }
 
@@ -14,7 +15,7 @@ impl FormatType {
         match extension.to_lowercase().as_str() {
             "pdf" => FormatType::Pdf,
             "docx" => FormatType::Docx,
-            "txt" => FormatType::Txt,
+            "txt" => FormatType::Text,
             _ => FormatType::Unknown,
         }
     }

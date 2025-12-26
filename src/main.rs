@@ -16,7 +16,7 @@ fn main() {
     storage.run();
 
     let mut extractor = Extractor::new(storage.get_channel_sender().clone());
-    extractor.init(2);
+    extractor.init(4);
 
     let mut classifier  = Classifier::new();
     classifier.init(2);
@@ -30,7 +30,7 @@ fn main() {
         let mut filter1 = Filter::new();
         filter1.set_case_sensitive(false);
         //filter1.set_filename_contains("report");
-        filter1.set_extension_is("pdf");
+        filter1.set_extension_is("txt");
 
         let mut filter2 = Filter::new();
         filter2.set_extension_is("docx");
@@ -38,7 +38,7 @@ fn main() {
         scanner.set_filters_mode(FiltersMode::Or);
 
         scanner.add_filter(filter1);
-        scanner.add_filter(filter2);
+        //scanner.add_filter(filter2);
 
         scanner.scan_folder("/home/roothunter/Documents");
         // if let Err(e) = scanner.save_documents(&mut storage) {

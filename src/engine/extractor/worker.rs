@@ -123,8 +123,21 @@ impl EngineTask<Document> for ExtractorWorker {
                                     }
                                 }
                             }
-                            FormatType::Txt => {
-                                error!(target: LOG_TARGET, worker_id = worker_id, "Text extraction not implemented yet.");
+                            FormatType::Text => {
+                                let extractor = formats::text::TextExtractor;
+                                match extractor.extract_text(document.get_path()) {
+                                    Ok(text) => {
+                                        info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text from TXT, length: {}", text.len());
+                                        let content: String = build_text_content(text);
+                                        info!(target: LOG_TARGET, "Extracted text distribution: {:?}", content);
+                                        document.set_content(content);
+                                        document.set_status(DocumentStatus::Extracted);
+                                        buffer.push(document);
+                                    }
+                                    Err(e) => {
+                                        error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract text from TXT: {:?} ({})", e, document.get_path());
+                                    }
+                                }
                             }
                             FormatType::Docx => {
                                 let extractor = formats::microsoft::docx::DocxExtractor;
