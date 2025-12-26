@@ -1,6 +1,6 @@
 pub mod commands;
 
-use std::{collections::HashMap, env, path::{MAIN_SEPARATOR, MAIN_SEPARATOR_STR}};
+use std::{collections::HashMap, env, path::MAIN_SEPARATOR};
 
 use once_cell::sync::Lazy;
 use rusqlite::Result;

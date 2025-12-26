@@ -2,7 +2,7 @@ use std::{collections::HashMap, path::Path};
 
 use tracing::info;
 
-use crate::{engine::extractor::formats::FormatType, entities::container::{self, Container}};
+use crate::{engine::extractor::formats::FormatType, entities::container::Container};
 
 const LOG_TARGET: &str = "document";
 
