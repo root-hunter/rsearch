@@ -3,7 +3,9 @@ use std::env;
 use once_cell::sync::Lazy;
 use pdfium_render::prelude::*;
 
-use crate::{engine::extractor::formats::FileExtractor};
+use crate::engine::extractor::formats::{DataExtracted, FileExtractor};
+
+const LOG_TARGET: &str = "extractor_pdf";
 
 pub static PDFIUM_LIB_PATH: Lazy<&'static str> = Lazy::new(|| {
     Box::leak(
@@ -13,10 +15,11 @@ pub static PDFIUM_LIB_PATH: Lazy<&'static str> = Lazy::new(|| {
     )
 });
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PdfExtractor;
 
 impl FileExtractor for PdfExtractor {
-    fn extract_text(&self, path: &str) -> Result<String, Box<dyn std::error::Error>> {
+    fn extract(&self, path: &str) -> Result<DataExtracted, Box<dyn std::error::Error>> {
         let lib = if PDFIUM_LIB_PATH.is_empty() {
             Pdfium::bind_to_system_library()?
         } else {
@@ -33,6 +36,6 @@ impl FileExtractor for PdfExtractor {
             text.push_str(&page_text);
             text.push('\n');
         }
-        Ok(text)
+        Ok(DataExtracted::Text(text))
     }
 }

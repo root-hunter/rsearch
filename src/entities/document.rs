@@ -13,7 +13,7 @@ pub enum DocumentError {
     DatabaseError(rusqlite::Error),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DocumentStatus {
     New,
     Scanned,
@@ -22,7 +22,7 @@ pub enum DocumentStatus {
     Deleted,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Document {
     id: Option<i64>,
     path: String,

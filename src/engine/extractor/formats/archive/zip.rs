@@ -1,7 +1,10 @@
 use tracing::info;
 
-use crate::engine::{extractor::formats::{Archive, ArchiveExtractor}, scanner::Scanner};
+use crate::engine::{extractor::formats::{Archive, DataExtracted, FileExtractor}, scanner::Scanner};
 
+const LOG_TARGET: &str = "extractor_zip";
+
+#[derive(Debug, Clone)]
 pub struct ZipExtractor {
     scanner: Scanner
 }
@@ -12,16 +15,16 @@ impl ZipExtractor {
     }
 }
 
-impl ArchiveExtractor for ZipExtractor {
-    fn extract_files(&self, path: &str) -> Result<String, Box<dyn std::error::Error>> {
-        info!("Extracting files from ZIP archive: {}", path);
-        info!("Using scanner: {:?}", self.scanner);
+impl FileExtractor for ZipExtractor {
+    fn extract(&self, path: &str) -> Result<DataExtracted, Box<dyn std::error::Error>> {
+        info!(target: LOG_TARGET, "Extracting files from ZIP archive: {}", path);
+        info!(target: LOG_TARGET, "Using scanner: {:?}", self.scanner);
 
         let file = std::fs::File::open(path)?;
         let mut archive = zip::ZipArchive::new(file)?;
 
         for i in 0..archive.len() {
-            let mut file = archive.by_index(i)?;
+            let file = archive.by_index(i)?;
             let outpath = match file.enclosed_name() {
                 Some(path) => path.to_owned(),
                 None => continue,
@@ -30,13 +33,13 @@ impl ArchiveExtractor for ZipExtractor {
             let file_path = outpath.to_string_lossy().to_string();
 
             if self.scanner.check_filters(&outpath) {
-                info!("File passed filters: {}", file_path);
+                info!(target: LOG_TARGET, "File passed filters: {}", file_path);
             } else {
-                //info!("File did not pass filters: {}", file_path);
+                //info!(target: LOG_TARGET, "File did not pass filters: {}", file_path);
                 continue;
             }
         }
 
-        Ok("".into())
+        Ok(DataExtracted::Text(String::new()))
     }
 }

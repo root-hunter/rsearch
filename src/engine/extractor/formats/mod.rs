@@ -3,7 +3,7 @@ pub mod pdf;
 pub mod microsoft;
 pub mod archive;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Archive {
     Zip,
     // Tar,
@@ -12,7 +12,7 @@ pub enum Archive {
     // Unknown,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum FormatType {
     Pdf,
     Docx,
@@ -36,10 +36,11 @@ impl FormatType {
     }
 }
 
-pub trait FileExtractor {
-    fn extract_text(&self, path: &str) -> Result<String, Box<dyn std::error::Error>>;
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum DataExtracted {
+    Text(String),
 }
 
-pub trait ArchiveExtractor {
-    fn extract_files(&self, path: &str) -> Result<String, Box<dyn std::error::Error>>;
+pub trait FileExtractor {
+    fn extract(&self, path: &str) -> Result<DataExtracted, Box<dyn std::error::Error>>;
 }

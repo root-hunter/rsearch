@@ -1,12 +1,18 @@
-use std::time::{Duration, Instant};
+use std::{
+    collections::HashMap,
+    time::{Duration, Instant},
+};
 
 use crate::{
     engine::{
-        ChannelRecvTimeoutError, EngineTask, EngineTaskWorker, Receiver, Sender, extractor::{
+        ChannelRecvTimeoutError, EngineTask, EngineTaskWorker, Receiver, Sender,
+        extractor::{
             EXTRACTOR_FLUSH_INTERVAL, EXTRACTOR_INSERT_BATCH_SIZE, ExtractorError,
-            formats::{self, ArchiveExtractor, FileExtractor, FormatType},
+            formats::{self, DataExtracted, FileExtractor, FormatType},
             utils::build_text_content,
-        }, scanner::{self, Scanner}, unbounded_channel
+        },
+        scanner::{self, Scanner},
+        unbounded_channel,
     },
     entities::document::{Document, DocumentStatus},
     storage::commands::{CommandSaveBulkDocuments, StorageCommand},
@@ -63,7 +69,8 @@ impl ExtractorWorker {
                     documents: batch,
                     resp_tx: None,
                 },
-            )).unwrap();
+            ))
+            .unwrap();
         //Document::save_bulk(conn, batch).map_err(|_| ExtractorError::ExtractionFailed)?;
 
         Ok(())
@@ -102,93 +109,50 @@ impl EngineTask<Document> for ExtractorWorker {
             let mut buffer: Vec<Document> = vec![];
             let mut last_flush = Instant::now();
 
+            let mut extractors_map: HashMap<FormatType, Box<dyn FileExtractor>> = HashMap::new();
+
+            extractors_map.insert(FormatType::Text, Box::new(formats::text::TextExtractor));
+            extractors_map.insert(FormatType::Pdf, Box::new(formats::pdf::PdfExtractor));
+            extractors_map.insert(
+                FormatType::Docx,
+                Box::new(formats::microsoft::docx::DocxExtractor),
+            );
+            extractors_map.insert(
+                FormatType::Archive(formats::Archive::Zip),
+                Box::new(formats::archive::zip::ZipExtractor::new(scanner.clone())),
+            );
+
             loop {
                 match receiver.recv_timeout(Duration::from_millis(WORKER_RECEIVE_TIMEOUT_MS)) {
                     Ok(mut document) => {
                         info!(target: LOG_TARGET, worker_id = worker_id, "Processing document: {:?}", document);
+                        
+                        let document_format = document.get_format_type();
 
-                        match document.get_format_type() {
-                            FormatType::Pdf => {
-                                let extractor = formats::pdf::PdfExtractor;
-                                match extractor.extract_text(document.get_path()) {
-                                    Ok(text) => {
-                                        info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text from PDF, length: {}", text.len());
+                        let extractor = extractors_map.get(&document_format);
 
-                                        let content = build_text_content(text);
+                        if let Some(extractor) = extractor {
+                            match extractor.extract(document.get_path()) {
+                                Ok(data_extracted) => {
+                                    match data_extracted {
+                                        DataExtracted::Text(text) => {
+                                            info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text, length: {}", text.len());
 
-                                        document.set_content(content);
-                                        document.set_status(DocumentStatus::Extracted);
+                                            let content = build_text_content(text);
 
-                                        buffer.push(document);
-                                    }
-                                    Err(e) => {
-                                        error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract text from PDF: {:?} ({})", e, document.get_path());
-                                    }
-                                }
-                            }
-                            FormatType::Text => {
-                                let extractor = formats::text::TextExtractor;
-                                match extractor.extract_text(document.get_path()) {
-                                    Ok(text) => {
-                                        info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text from TXT, length: {}", text.len());
-                                        let content: String = build_text_content(text);
-                                        info!(target: LOG_TARGET, "Extracted text distribution: {:?}", content);
-                                        document.set_content(content);
-                                        document.set_status(DocumentStatus::Extracted);
-                                        buffer.push(document);
-                                    }
-                                    Err(e) => {
-                                        error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract text from TXT: {:?} ({})", e, document.get_path());
-                                    }
-                                }
-                            }
-                            FormatType::Docx => {
-                                let extractor = formats::microsoft::docx::DocxExtractor;
-                                match extractor.extract_text(document.get_path()) {
-                                    Ok(text) => {
-                                        info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text from DOCX, length: {}", text.len());
+                                            document.set_content(content);
+                                            document.set_status(DocumentStatus::Extracted);
 
-                                        let content: String = build_text_content(text);
-                                        info!(target: LOG_TARGET, "Extracted text distribution: {:?}", content);
-
-                                        document.set_content(content);
-                                        document.set_status(DocumentStatus::Extracted);
-
-                                        buffer.push(document);
-                                    }
-                                    Err(e) => {
-                                        error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract text from DOCX: {:?} ({})", e, document.get_path());
-                                    }
-                                }
-                            }
-
-                            FormatType::Archive(a) => {
-                                match a {
-                                    formats::Archive::Zip => {
-                                        let extractor = formats::archive::zip::ZipExtractor::new(scanner.clone());
-                                        
-                                        match extractor.extract_files(document.get_path()) {
-                                            Ok(text) => {
-                                                info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text from ZIP, length: {}", text.len());
-
-                                                let content: String = build_text_content(text);
-                                                info!(target: LOG_TARGET, "Extracted text distribution: {:?}", content);
-
-                                                document.set_content(content);
-                                                document.set_status(DocumentStatus::Extracted);
-
-                                                buffer.push(document);
-                                            }
-                                            Err(e) => {
-                                                error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract text from ZIP: {:?} ({})", e, document.get_path());
-                                            }
+                                            buffer.push(document);
                                         }
                                     }
                                 }
+                                Err(e) => {
+                                    error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract text: {:?} ({})", e, document.get_path());
+                                }
                             }
-                            _ => {
-                                error!(target: LOG_TARGET, worker_id = worker_id, "Unsupported document format: {:?}", document.get_format_type());
-                            }
+                        } else {
+                            error!(target: LOG_TARGET, worker_id = worker_id, "No extractor found for document format: {:?}", document_format);
                         }
                     }
                     Err(ChannelRecvTimeoutError::Timeout) => {

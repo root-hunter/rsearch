@@ -7,7 +7,7 @@ pub enum FilterError {
     InvalidRegex(regex::Error),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct StringCondition {
     substring: String,
     case_sensitive: bool,
@@ -32,7 +32,7 @@ impl StringCondition {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Filter {
     case_sensitive: bool,
     filename_contains: Option<StringCondition>,
@@ -41,7 +41,7 @@ pub struct Filter {
     dir_not_contains: Option<StringCondition>,
     extension_is: Option<String>,
     extension_is_not: Option<String>,
-    filename_regex: Option<Regex>,
+    filename_regex: Option<String>,
 }
 
 impl Filter {
@@ -95,13 +95,29 @@ impl Filter {
     }
 
     pub fn set_filename_regex(&mut self, pattern: &str) -> Result<(), FilterError> {
-        let regex = Regex::new(pattern).map_err(FilterError::InvalidRegex)?;
-        self.filename_regex = Some(regex);
+        //let regex = Regex::new(pattern).map_err(FilterError::InvalidRegex)?;
+        self.filename_regex = Some(pattern.to_string());
         Ok(())
     }
 
     pub fn set_case_sensitive(&mut self, case_sensitive: bool) {
         self.case_sensitive = case_sensitive;
+    }
+
+    pub fn get_regex(&self) -> Option<Regex> {
+        if let Some(ref pattern) = self.filename_regex {
+            let regex_builder = if self.case_sensitive {
+                Regex::new(pattern)
+            } else {
+                Regex::new(&format!("(?i){}", pattern))
+            };
+            match regex_builder {
+                Ok(r) => Some(r),
+                Err(_) => None,
+            }
+        } else {
+            None
+        }
     }
 
     pub fn check(&self, path: &Path) -> bool {
@@ -144,7 +160,8 @@ impl Filter {
             }
         }
 
-        if let Some(ref regex) = self.filename_regex {
+        let regex = self.get_regex();
+        if let Some(ref regex) = regex {
             matches = matches && regex.is_match(file_name);
         }
 

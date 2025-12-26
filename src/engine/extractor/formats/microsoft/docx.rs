@@ -1,4 +1,4 @@
-use crate::engine::extractor::formats::FileExtractor;
+use crate::engine::extractor::formats::{DataExtracted, FileExtractor};
 
 use zip::ZipArchive;
 use quick_xml::Reader;
@@ -6,10 +6,13 @@ use quick_xml::events::Event;
 use std::fs::File;
 use std::io::Read;
 
+const LOG_TARGET: &str = "extractor_docx";
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DocxExtractor;
 
 impl FileExtractor for DocxExtractor {
-    fn extract_text(&self, path: &str) -> Result<String, Box<dyn std::error::Error>> {
+    fn extract(&self, path: &str) -> Result<DataExtracted, Box<dyn std::error::Error>> {
         let file = File::open(path)?;
         let mut zip = ZipArchive::new(file)?;
 
@@ -34,6 +37,6 @@ impl FileExtractor for DocxExtractor {
             buf.clear();
         }
 
-        Ok(text)
+        Ok(DataExtracted::Text(text))
     }
 }

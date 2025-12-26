@@ -14,7 +14,7 @@ pub enum ScannerError {
     FilterError(FilterError),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum FiltersMode {
     And,
     Or,
