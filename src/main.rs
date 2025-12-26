@@ -43,7 +43,7 @@ fn main() {
     scanner.add_channel_senders(channels);
 
     let _t2 = thread::spawn(move || {
-        scanner.scan_folder("/home/roothunter");
+        scanner.scan_folder("/home/roothunter/Documents");
     });
 
     loop {}
