@@ -1,8 +1,8 @@
-use std::path::Path;
+use std::{collections::HashMap, path::Path};
 
 use tracing::info;
 
-use crate::engine::extractor::formats::FormatType;
+use crate::{engine::extractor::formats::FormatType, entities::container::{self, Container}};
 
 const LOG_TARGET: &str = "document";
 
@@ -151,54 +151,10 @@ impl Document {
         Ok(())
     }
 
-    pub fn update_index(&self, conn: &rusqlite::Connection) -> Result<(), DocumentError> {
-        let document_id: i64 = self._get_id(conn)?;
-
-        conn.execute(
-            "UPDATE index_documents SET content = ?1, description = ?2 WHERE document_id = ?3",
-            rusqlite::params![self.content, self.description, document_id],
-        )
-        .map_err(DocumentError::DatabaseError)?;
-
-        Ok(())
-    }
-
-    pub fn update_metadata(&self, conn: &rusqlite::Connection) -> Result<(), DocumentError> {
-        conn.execute(
-            "UPDATE documents SET path = ?1 WHERE path = ?2",
-            rusqlite::params![self.path, self.path],
-        )
-        .map_err(DocumentError::DatabaseError)?;
-
-        Ok(())
-    }
-
-    pub fn update(&self, conn: &rusqlite::Connection) -> Result<(), DocumentError> {
-        self.update_metadata(conn)?;
-        self.update_index(conn)?;
-        Ok(())
-    }
-
-    pub fn delete(&self, conn: &rusqlite::Connection) -> Result<(), DocumentError> {
-        let document_id: i64 = self._get_id(conn)?;
-
-        conn.execute(
-            "DELETE FROM index_documents WHERE document_id = ?1",
-            rusqlite::params![document_id],
-        )
-        .map_err(DocumentError::DatabaseError)?;
-        conn.execute(
-            "DELETE FROM documents WHERE id = ?1",
-            rusqlite::params![document_id],
-        )
-        .map_err(DocumentError::DatabaseError)?;
-        Ok(())
-    }
-
     pub fn get_id_by_path(&self, conn: &rusqlite::Connection) -> Result<i64, DocumentError> {
         let document_id: i64 = conn
             .query_row(
-                "SELECT id FROM documents WHERE path = ?1",
+                "SELECT id FROM documents_view WHERE path = ?1",
                 rusqlite::params![self.path],
                 |row| row.get(0),
             )
@@ -224,14 +180,22 @@ impl Document {
     pub fn save_bulk(
         conn: &mut rusqlite::Connection,
         documents: Vec<Document>,
+        container_cache: &mut HashMap<String, Container>,
     ) -> Result<(), DocumentError> {
         let tx = conn.transaction().map_err(DocumentError::DatabaseError)?;
         let count = documents.len();
 
         for mut document in documents {
+            let container_path = Path::new(&document.path)
+                .parent()
+                .map(|p| p.to_string_lossy().to_string())
+                .unwrap_or_default();
+            
+            let container_id = container_cache.get(&container_path).unwrap().get_id();
+
             tx.execute(
-                "INSERT INTO documents (path, filename, extension, status) VALUES (?1, ?2, ?3, ?4)",
-                rusqlite::params![document.path, document.filename, document.extension, document.get_status_str()],
+                "INSERT INTO documents (filename, extension, status, container_id) VALUES (?1, ?2, ?3, ?4)",
+                rusqlite::params![document.filename, document.extension, document.get_status_str(), container_id],
             )
             .map_err(|err| {
                 if let rusqlite::Error::SqliteFailure(ref err_code, _) = err {
