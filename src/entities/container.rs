@@ -1,6 +1,6 @@
 use std::{collections::HashMap, path};
 
-use crate::{engine::scanner::ScannedDocument, entities::document::Document};
+use crate::engine::scanner::ScannedDocument;
 
 #[derive(Debug)]
 pub enum ContainerError {

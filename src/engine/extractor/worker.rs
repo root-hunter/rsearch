@@ -14,7 +14,7 @@ use crate::{
         scanner::{ScannedDocument, Scanner},
         unbounded_channel,
     },
-    entities::document::{Document, DocumentStatus},
+    entities::document::DocumentStatus,
     storage::commands::{CommandSaveBulkDocuments, StorageCommand},
 };
 use tracing::{error, info};

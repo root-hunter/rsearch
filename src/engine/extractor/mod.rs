@@ -8,8 +8,7 @@ use std::{
 };
 
 use crate::{
-    engine::{EngineTask, PipelineStage, Sender, extractor::worker::ExtractorWorker, scanner::{ScannedDocument, Scanner}},
-    entities::document::Document, storage::commands::StorageCommand,
+    engine::{EngineTask, PipelineStage, Sender, extractor::worker::ExtractorWorker, scanner::{ScannedDocument, Scanner}}, storage::commands::StorageCommand,
 };
 use once_cell::sync::Lazy;
 use tracing::info;
