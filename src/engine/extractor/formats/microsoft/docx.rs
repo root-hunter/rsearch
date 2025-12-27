@@ -1,3 +1,4 @@
+use crate::engine::extractor::formats::text::TextDistribution;
 use crate::engine::extractor::formats::{DataExtracted, FileExtractor};
 use crate::entities::document::Document;
 
@@ -38,14 +39,10 @@ impl FileExtractor for DocxExtractor {
             buf.clear();
         }
 
-        Ok(DataExtracted::Text(text))
-    }
+        let reader = std::io::BufReader::new(text.as_bytes());
+        let dist = TextDistribution::from_buffer(reader);
+        let text = dist.export_string(500);
 
-    fn extract_compressed(
-        &self,
-        _parent: Document,
-        document: Document,
-    ) -> Result<DataExtracted, Box<dyn std::error::Error>> {
-        self.extract(document)
+        Ok(DataExtracted::Text(text))
     }
 }

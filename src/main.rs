@@ -34,7 +34,7 @@ fn main() {
 
     scanner.add_filter(filter1);
     scanner.add_filter(filter2);
-    // scanner.add_filter(filter3);
+    scanner.add_filter(filter3);
 
     let mut extractor = Extractor::new(storage.get_channel_sender().clone(), scanner.clone());
     extractor.init(16);

@@ -9,7 +9,6 @@ use crate::{
         extractor::{
             EXTRACTOR_FLUSH_INTERVAL, EXTRACTOR_INSERT_BATCH_SIZE, ExtractorError,
             formats::{self, DataExtracted, FileExtractor, FormatType},
-            utils::build_text_content,
         },
         scanner::{ScannedDocument, Scanner},
         unbounded_channel,
@@ -146,10 +145,10 @@ impl EngineTask<ScannedDocument> for ExtractorWorker {
 
                             match extractor.extract(document.clone()) {
                                 Ok(data) => match data {
-                                    DataExtracted::Text(text) => {
-                                        info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text, length: {}", text.len());
+                                    DataExtracted::Text(content) => {
+                                        info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text, length: {}", content.len());
 
-                                        let content = build_text_content(text);
+                                        //let content = build_text_content(text);
 
                                         document.set_content(content);
                                         document.set_status(DocumentStatus::Extracted);

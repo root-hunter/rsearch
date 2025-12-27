@@ -1,10 +1,10 @@
-use std::env;
+use std::{env, io::BufReader};
 
 use once_cell::sync::Lazy;
 use pdfium_render::prelude::*;
 
 use crate::{
-    engine::extractor::formats::{DataExtracted, FileExtractor},
+    engine::extractor::formats::{DataExtracted, FileExtractor, text::TextDistribution},
     entities::document::Document,
 };
 
@@ -39,14 +39,11 @@ impl FileExtractor for PdfExtractor {
             text.push_str(&page_text);
             text.push('\n');
         }
-        Ok(DataExtracted::Text(text))
-    }
 
-    fn extract_compressed(
-        &self,
-        _parent: Document,
-        document: Document,
-    ) -> Result<DataExtracted, Box<dyn std::error::Error>> {
-        self.extract(document)
+        let reader = BufReader::new(text.as_bytes());
+        let dist = TextDistribution::from_buffer(reader);
+        let text = dist.export_string(500);
+
+        Ok(DataExtracted::Text(text))
     }
 }
