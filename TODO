@@ -5,3 +5,4 @@
 - Create a CLI interface that use the deamon APIs
 - Archive searching (zip, xz, ...)
 - remove all .unwrap()
+- implement stream base text extractor / tokenizator algo
