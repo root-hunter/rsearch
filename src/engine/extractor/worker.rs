@@ -14,8 +14,8 @@ use crate::{
         scanner::{ScannedDocument, Scanner},
         unbounded_channel,
     },
-    entities::document::DocumentStatus,
-    storage::commands::{CommandSaveBulkDocuments, StorageCommand},
+    entities::{container::{Container, ContainerType}, document::DocumentStatus},
+    storage::{StorageError, commands::StorageCommand},
 };
 use tracing::{error, info};
 
@@ -64,12 +64,10 @@ impl ExtractorWorker {
         let batch = buffer.drain(..).collect::<Vec<_>>();
 
         database_tx
-            .send(StorageCommand::SaveBulkDocuments(
-                CommandSaveBulkDocuments {
-                    documents: batch,
-                    resp_tx: None,
-                },
-            ))
+            .send(StorageCommand::SaveBulkDocuments {
+                documents: batch,
+                resp_tx: None,
+            })
             .unwrap();
         //Document::save_bulk(conn, batch).map_err(|_| ExtractorError::ExtractionFailed)?;
 
@@ -104,6 +102,7 @@ impl EngineTask<ScannedDocument> for ExtractorWorker {
 
         let database_tx = self.database_tx.clone();
         let scanner = self.scanner.clone();
+        let channel_tx = self.channel_tx.clone();
 
         self.thread_handle = Some(std::thread::spawn(move || {
             let mut buffer: Vec<ScannedDocument> = vec![];
@@ -133,8 +132,16 @@ impl EngineTask<ScannedDocument> for ExtractorWorker {
                         let extractor = extractors_map.get(&document_format);
 
                         if let Some(extractor) = extractor {
-                            match extractor.extract(document.get_path()) {
-                                Ok(data_extracted) => match data_extracted {
+                            if scanned.container_type == ContainerType::Archive {
+                                info!(target: LOG_TARGET, worker_id = worker_id, "Extracting from archive document: {:?}", document);
+                                document.set_status(DocumentStatus::Extracted);
+
+                                buffer.push(scanned);
+                                continue;
+                            }
+
+                            match extractor.extract(document.clone()) {
+                                Ok(data) => match data {
                                     DataExtracted::Text(text) => {
                                         info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text, length: {}", text.len());
 
@@ -144,6 +151,46 @@ impl EngineTask<ScannedDocument> for ExtractorWorker {
                                         document.set_status(DocumentStatus::Extracted);
 
                                         buffer.push(scanned);
+                                    }
+                                    DataExtracted::ArchiveDocuments { archive, documents } => {
+                                        info!(target: LOG_TARGET, worker_id = worker_id, "Extracted {} documents from archive", documents.len());
+
+                                        let (resp_tx, resp_rx) =
+                                            unbounded_channel::<Result<Container, StorageError>>();
+
+                                        database_tx
+                                            .send(StorageCommand::SaveArchive {
+                                                archive: archive,
+                                                resp_tx: Some(resp_tx),
+                                            })
+                                            .unwrap();
+
+                                        match resp_rx.recv() {
+                                            Ok(result) => match result {
+                                                Ok(archive) => {
+                                                    info!(target: LOG_TARGET, worker_id = worker_id, "Archive saved successfully with ID: {}", archive.get_id());
+
+                                                    for scanned_doc in documents {
+                                                        let mut doc = scanned_doc.document;
+                                                        doc.set_container_id(archive.get_id());
+                                                        channel_tx
+                                                            .send(ScannedDocument {
+                                                                container_type: scanned_doc
+                                                                    .container_type,
+                                                                document: doc,
+                                                                parent: scanned_doc.parent,
+                                                            })
+                                                            .unwrap();
+                                                    }
+                                                }
+                                                Err(e) => {
+                                                    error!(target: LOG_TARGET, worker_id = worker_id, "Failed to save archive: {:?}", e);
+                                                }
+                                            },
+                                            Err(e) => {
+                                                error!(target: LOG_TARGET, worker_id = worker_id, "Failed to receive archive save response: {:?}", e);
+                                            }
+                                        }
                                     }
                                     _ => {
                                         error!(target: LOG_TARGET, worker_id = worker_id, "Unsupported extracted data type for document: {:?}", document);

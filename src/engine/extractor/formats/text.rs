@@ -1,4 +1,4 @@
-use crate::engine::extractor::formats::{DataExtracted, FileExtractor};
+use crate::{engine::extractor::formats::{DataExtracted, FileExtractor}, entities::document::{self, Document}};
 
 const LOG_TARGET: &str = "extractor_text";
 
@@ -6,8 +6,12 @@ const LOG_TARGET: &str = "extractor_text";
 pub struct TextExtractor;
 
 impl FileExtractor for TextExtractor {
-    fn extract(&self, path: &str) -> Result<DataExtracted, Box<dyn std::error::Error>> {
-        let content = std::fs::read_to_string(path)?;
+    fn extract(&self, document: Document) -> Result<DataExtracted, Box<dyn std::error::Error>> {
+        let content = std::fs::read_to_string(document.get_path())?;
         Ok(DataExtracted::Text(content))    
+    }
+
+    fn extract_compressed(&self, parent: Document, document: Document) -> Result<DataExtracted, Box<dyn std::error::Error>> {
+        self.extract(document)
     }
 }

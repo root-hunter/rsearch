@@ -9,7 +9,7 @@ use tracing::{error, info, warn};
 use crate::{
     engine::{EngineTask, Receiver, Sender, unbounded_channel},
     entities::{
-        container::{self, Container},
+        container::{self, Container, ContainerType},
         document::Document,
     },
     storage::commands::StorageCommand,
@@ -30,6 +30,8 @@ pub static STORAGE_DATABASE_PATH: Lazy<&'static str> = Lazy::new(|| {
 pub enum StorageError {
     InitializationError(rusqlite::Error),
     ExecutionError(rusqlite::Error),
+    ContainerError(container::ContainerError),
+    DocumentError(crate::entities::document::DocumentError),
 }
 
 #[derive(Debug)]
@@ -91,6 +93,7 @@ impl StorageEngine {
                 extension TEXT,
                 status TEXT NOT NULL DEFAULT 'New',
                 container_id INTEGER NOT NULL,
+                UNIQUE(filename, container_id),
                 FOREIGN KEY(container_id) REFERENCES containers(id)
             )",
             [],
@@ -110,7 +113,8 @@ impl StorageEngine {
         info!(target: LOG_TARGET, "Create view for full document info");
 
         conn.execute(
-            &format!("CREATE VIEW IF NOT EXISTS documents_view AS 
+            &format!(
+                "CREATE VIEW IF NOT EXISTS documents_view AS 
                     SELECT 
                     c.id as container_id,
                     d.id as id,
@@ -122,9 +126,12 @@ impl StorageEngine {
                     d.extension as extension
                     FROM documents d
                     INNER JOIN containers c ON c.id = d.container_id
-                    ORDER BY container_id, id", MAIN_SEPARATOR),
+                    ORDER BY container_id, id",
+                MAIN_SEPARATOR
+            ),
             [],
-        ).map_err(StorageError::InitializationError)?;
+        )
+        .map_err(StorageError::InitializationError)?;
 
         info!(target: LOG_TARGET, "Storage engine initialized successfully");
 
@@ -166,23 +173,23 @@ impl EngineTask<StorageCommand> for StorageEngine {
                     .recv_timeout(std::time::Duration::from_millis(WORKER_RECEIVE_TIMEOUT_MS))
                 {
                     match command {
-                        StorageCommand::SaveDocument(command) => {
-                            let mut document = command.document;
+                        StorageCommand::SaveDocument {
+                            mut document,
+                            resp_tx,
+                        } => {
                             info!(target: LOG_TARGET, "Saving document: {:?}", document);
 
                             if let Err(e) = document.save(&mut conn) {
                                 error!(target: LOG_TARGET, "Failed to save document: {:?}", e);
                             }
 
-                            if let Some(resp_tx) = command.resp_tx {
+                            if let Some(resp_tx) = resp_tx {
                                 let _ = resp_tx.send(Ok(()));
                             } else {
                                 warn!(target: LOG_TARGET, "No response channel provided for SaveDocument command");
                             }
                         }
-                        StorageCommand::SaveBulkDocuments(command) => {
-                            let documents = command.documents;
-                
+                        StorageCommand::SaveBulkDocuments { documents, resp_tx } => {
                             info!(target: LOG_TARGET, "Saving bulk documents: {:?}", documents);
 
                             if let Err(e) = container::Container::update_cache_from_documents(
@@ -199,10 +206,28 @@ impl EngineTask<StorageCommand> for StorageEngine {
                                 error!(target: LOG_TARGET, "Failed to save bulk documents: {:?}", e);
                             }
 
-                            if let Some(resp_tx) = command.resp_tx {
+                            if let Some(resp_tx) = resp_tx {
                                 let _ = resp_tx.send(Ok(()));
                             } else {
                                 warn!(target: LOG_TARGET, "No response channel provided for SaveBulkDocuments command");
+                            }
+                        }
+                        StorageCommand::SaveArchive { mut archive, resp_tx } => {
+                            info!(target: LOG_TARGET, "Saving archive: {:?}", archive);
+
+                            if let Err(e) = archive.save(&mut conn) {
+                                error!(target: LOG_TARGET, "Failed to save archive: {:?}", e);
+
+                                if let Some(resp_tx) = resp_tx {
+                                    let _ = resp_tx.send(Err(StorageError::ContainerError(e)));
+                                }
+                                continue;
+                            }
+
+                            if let Some(resp_tx) = resp_tx {
+                                let _ = resp_tx.send(Ok(archive));
+                            } else {
+                                warn!(target: LOG_TARGET, "No response channel provided for SaveArchive command");
                             }
                         }
                         _ => {

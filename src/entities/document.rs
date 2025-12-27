@@ -2,7 +2,10 @@ use std::{collections::HashMap, path::Path};
 
 use tracing::info;
 
-use crate::{engine::{extractor::formats::FormatType, scanner::ScannedDocument}, entities::container::Container};
+use crate::{
+    engine::{extractor::formats::FormatType, scanner::ScannedDocument},
+    entities::container::Container,
+};
 
 const LOG_TARGET: &str = "document";
 
@@ -31,6 +34,7 @@ pub struct Document {
     content: String,
     description: String,
     status: DocumentStatus,
+    container_id: Option<i64>,
 }
 
 impl Document {
@@ -43,6 +47,7 @@ impl Document {
             content: String::new(),
             description: String::new(),
             status: DocumentStatus::New,
+            container_id: None,
         }
     }
 
@@ -73,6 +78,7 @@ impl Document {
             content: String::new(),
             description: String::new(),
             status: DocumentStatus::New,
+            container_id: None,
         }
     }
 
@@ -124,10 +130,18 @@ impl Document {
         self.id = Some(id);
     }
 
+    pub fn set_container_id(&mut self, container_id: i64) {
+        self.container_id = Some(container_id);
+    }
+
+    pub fn get_container_id(&self) -> Option<i64> {
+        self.container_id
+    }
+
     pub fn save(&mut self, conn: &rusqlite::Connection) -> Result<(), DocumentError> {
         conn.execute(
-            "INSERT INTO documents (path, filename, extension, status) VALUES (?1, ?2, ?3, ?4)",
-            rusqlite::params![self.path, self.filename, self.extension, self.get_status_str()],
+            "INSERT INTO documents (path, filename, extension, status, container_id) VALUES (?1, ?2, ?3, ?4, ?5)",
+            rusqlite::params![self.path, self.filename, self.extension, self.get_status_str(), self.container_id],
         )
         .map_err(|err| {
             if let rusqlite::Error::SqliteFailure(ref err_code, _) = err {
@@ -188,12 +202,18 @@ impl Document {
         for mut scanned in documents {
             let document = &mut scanned.document;
 
-            let container_path = Path::new(&document.path)
-                .parent()
-                .map(|p| p.to_string_lossy().to_string())
-                .unwrap_or_default();
-            
-            let container_id = container_cache.get(&container_path).unwrap().get_id();
+            let container_id = if document.container_id.is_some() {
+                document.container_id.unwrap()
+            } else {
+                let container_path = Path::new(&document.path)
+                    .parent()
+                    .map(|p| p.to_string_lossy().to_string())
+                    .unwrap_or_default();
+
+                let container_id = container_cache.get(&container_path).unwrap().get_id();
+
+                container_id
+            };
 
             tx.execute(
                 "INSERT INTO documents (filename, extension, status, container_id) VALUES (?1, ?2, ?3, ?4)",
@@ -229,11 +249,7 @@ impl Document {
     }
 
     pub fn get_format_type(&self) -> FormatType {
-        FormatType::get_by_extension(
-            self.extension
-                .as_deref()
-                .unwrap_or(""),
-        )
+        FormatType::get_by_extension(self.extension.as_deref().unwrap_or(""))
     }
 
     pub fn get_status(&self) -> &DocumentStatus {

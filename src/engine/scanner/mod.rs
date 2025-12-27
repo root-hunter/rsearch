@@ -20,8 +20,10 @@ pub enum FiltersMode {
     Or,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+
 pub struct ScannedDocument {
+    pub parent: Option<Document>,
     pub container_type: ContainerType, 
     pub document: Document,
 }
@@ -105,6 +107,7 @@ impl Scanner {
             if let Err(e) = tx.send(ScannedDocument {
                 container_type: ContainerType::Folder, // You might want to set this appropriately
                 document: document.clone(),
+                parent: None,
             }) {
                 error!(target: LOG_TARGET, "Failed to send document to extractor: {:?}", e);
             }

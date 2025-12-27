@@ -1,6 +1,6 @@
 use tracing::info;
 
-use crate::engine::{extractor::formats::{DataExtracted, FileExtractor}, scanner::Scanner};
+use crate::{engine::{extractor::formats::{DataExtracted, FileExtractor}, scanner::{ScannedDocument, Scanner}}, entities::{container::{Container, ContainerType}, document::{Document, DocumentStatus}}};
 
 const LOG_TARGET: &str = "extractor_zip";
 
@@ -16,12 +16,14 @@ impl ZipExtractor {
 }
 
 impl FileExtractor for ZipExtractor {
-    fn extract(&self, path: &str) -> Result<DataExtracted, Box<dyn std::error::Error>> {
-        info!(target: LOG_TARGET, "Extracting files from ZIP archive: {}", path);
+    fn extract(&self, document: Document) -> Result<DataExtracted, Box<dyn std::error::Error>> {
+        info!(target: LOG_TARGET, "Extracting files from ZIP archive: {}", document.get_path());
         info!(target: LOG_TARGET, "Using scanner: {:?}", self.scanner);
 
-        let file = std::fs::File::open(path)?;
+        let file = std::fs::File::open(document.get_path())?;
         let mut archive = zip::ZipArchive::new(file)?;
+
+        let mut documents = Vec::new();
 
         for i in 0..archive.len() {
             let file = archive.by_index(i)?;
@@ -34,12 +36,29 @@ impl FileExtractor for ZipExtractor {
 
             if self.scanner.check_filters(&outpath) {
                 info!(target: LOG_TARGET, "File passed filters: {}", file_path);
+                let mut doc = Document::from_path(&outpath);
+                doc.set_status(DocumentStatus::Extracted);
+                doc.set_filename(file_path);
+
+                documents.push(ScannedDocument {
+                    container_type: ContainerType::Archive,
+                    document: doc,
+                    parent: Some(document.clone()),
+                });
             } else {
-                //info!(target: LOG_TARGET, "File did not pass filters: {}", file_path);
                 continue;
             }
         }
 
-        Ok(DataExtracted::Text(String::new()))
+        let archive_container = Container::from_document(&document, ContainerType::Archive);
+
+        Ok(DataExtracted::ArchiveDocuments{
+            archive: archive_container,
+            documents,
+        })
+    }
+
+    fn extract_compressed(&self, parent: Document, document: Document) -> Result<DataExtracted, Box<dyn std::error::Error>> {
+        self.extract(document)
     }
 }

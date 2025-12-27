@@ -1,6 +1,6 @@
 use std::{collections::HashMap, path};
 
-use crate::engine::scanner::ScannedDocument;
+use crate::{engine::scanner::ScannedDocument, entities::document::Document};
 
 #[derive(Debug)]
 pub enum ContainerError {
@@ -11,6 +11,23 @@ pub enum ContainerError {
 pub enum ContainerType {
     Folder,
     Archive,
+}
+
+impl ContainerType {
+    pub fn from_str(s: &str) -> Self {
+        match s {
+            "Folder" => ContainerType::Folder,
+            "Archive" => ContainerType::Archive,
+            _ => ContainerType::Folder,
+        }
+    }
+
+    pub fn to_str(&self) -> &str {
+        match self {
+            ContainerType::Folder => "Folder",
+            ContainerType::Archive => "Archive",
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -29,6 +46,16 @@ impl Container {
         }
     }
 
+    pub fn from_document(document: &Document, container_type: ContainerType) -> Self {
+        let path = document.get_path();
+
+        Container {
+            id: 0,
+            path: path.into(),
+            r#type: container_type,
+        }
+    }
+
     pub fn get_id(&self) -> i64 {
         self.id
     }
@@ -41,7 +68,7 @@ impl Container {
         for scanned in documents {
             let document = scanned.document.clone();
             let container_type = scanned.container_type.clone();
-            
+
             let path = document.get_path();
             let path = path::Path::new(&path);
             if let Some(parent) = path.parent() {
@@ -75,18 +102,11 @@ impl Container {
             )
             .map_err(ContainerError::DatabaseError)?;
 
-        let container_type_str = match container_type {
-            ContainerType::Folder => "Folder",
-            ContainerType::Archive => "Archive",
-        };
+        let container_type_str = container_type.to_str();
 
         if let Ok(container) = stmt.query_row([path, container_type_str], |row| {
             let container_type_str: String = row.get(2)?;
-            let container_type = match container_type_str.as_str() {
-                "Folder" => ContainerType::Folder,
-                "Archive" => ContainerType::Archive,
-                _ => ContainerType::Folder,
-            };
+            let container_type = ContainerType::from_str(&container_type_str);
 
             Ok(Container {
                 id: row.get(0)?,
@@ -102,11 +122,7 @@ impl Container {
             [path],
             |row| {
                 let container_type_str: String = row.get(2)?;
-                let container_type = match container_type_str.as_str() {
-                    "Folder" => ContainerType::Folder,
-                    "Archive" => ContainerType::Archive,
-                    _ => ContainerType::Folder,
-                };
+                let container_type = ContainerType::from_str(&container_type_str);
 
                 Ok(Container {
                     id: row.get(0)?,
@@ -116,5 +132,37 @@ impl Container {
             },
         )
         .map_err(ContainerError::DatabaseError)
+    }
+
+    pub fn save(&mut self, conn: &mut rusqlite::Connection) -> Result<(), ContainerError> {
+        let mut stmt = conn
+            .prepare(
+                "INSERT INTO containers (path, type)
+         VALUES (?1, ?2)
+         ON CONFLICT(path) DO NOTHING
+         RETURNING id",
+            )
+            .map_err(ContainerError::DatabaseError)?;
+
+        let mut rows = stmt
+            .query(rusqlite::params![self.path, self.r#type.to_str()])
+            .map_err(ContainerError::DatabaseError)?;
+
+        if let Some(row) = rows.next().map_err(ContainerError::DatabaseError)? {
+            self.id = row
+                .get::<_, i64>(0)
+                .map_err(ContainerError::DatabaseError)?;
+            return Ok(());
+        }
+
+        self.id = conn
+            .query_row(
+                "SELECT id FROM containers WHERE path = ?1",
+                rusqlite::params![self.path],
+                |row| row.get(0),
+            )
+            .map_err(ContainerError::DatabaseError)?;
+
+        Ok(())
     }
 }
