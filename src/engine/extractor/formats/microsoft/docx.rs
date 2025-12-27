@@ -14,7 +14,7 @@ use zip::ZipArchive;
 pub struct DocxExtractor;
 
 impl FileExtractor for DocxExtractor {
-    fn extract(&self, document: Document) -> Result<DataExtracted, Box<dyn std::error::Error>> {
+    fn extract(document: Document) -> Result<DataExtracted, Box<dyn std::error::Error>> {
         let file = File::open(document.get_path())?;
         let mut zip = ZipArchive::new(file)?;
 

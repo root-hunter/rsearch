@@ -22,7 +22,7 @@ pub static PDFIUM_LIB_PATH: Lazy<&'static str> = Lazy::new(|| {
 pub struct PdfExtractor;
 
 impl FileExtractor for PdfExtractor {
-    fn extract(&self, document: Document) -> Result<DataExtracted, Box<dyn std::error::Error>> {
+    fn extract(document: Document) -> Result<DataExtracted, Box<dyn std::error::Error>> {
         let lib = if PDFIUM_LIB_PATH.is_empty() {
             Pdfium::bind_to_system_library()?
         } else {

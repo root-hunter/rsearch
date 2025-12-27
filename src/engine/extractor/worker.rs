@@ -8,7 +8,10 @@ use crate::{
         ChannelRecvTimeoutError, EngineTask, EngineTaskWorker, Receiver, Sender,
         extractor::{
             EXTRACTOR_FLUSH_INTERVAL, EXTRACTOR_INSERT_BATCH_SIZE, ExtractorError,
-            formats::{self, DataExtracted, FileExtractor, FormatType},
+            formats::{
+                self, DataExtracted, FileExtractor, FormatType, archive::zip::ZipExtractor,
+                microsoft::docx::DocxExtractor, pdf::PdfExtractor, text::TextExtractor,
+            },
         },
         scanner::{ScannedDocument, Scanner},
         unbounded_channel,
@@ -111,19 +114,6 @@ impl EngineTask<ScannedDocument> for ExtractorWorker {
             let mut buffer: Vec<ScannedDocument> = vec![];
             let mut last_flush = Instant::now();
 
-            let mut extractors_map: HashMap<FormatType, Box<dyn FileExtractor>> = HashMap::new();
-
-            extractors_map.insert(FormatType::Text, Box::new(formats::text::TextExtractor));
-            extractors_map.insert(FormatType::Pdf, Box::new(formats::pdf::PdfExtractor));
-            extractors_map.insert(
-                FormatType::Docx,
-                Box::new(formats::microsoft::docx::DocxExtractor),
-            );
-            extractors_map.insert(
-                FormatType::Archive(formats::Archive::Zip),
-                Box::new(formats::archive::zip::ZipExtractor::new(scanner.clone())),
-            );
-
             loop {
                 match receiver.recv_timeout(Duration::from_millis(WORKER_RECEIVE_TIMEOUT_MS)) {
                     Ok(mut scanned) => {
@@ -132,75 +122,129 @@ impl EngineTask<ScannedDocument> for ExtractorWorker {
                         let document = &mut scanned.document;
                         let document_format = document.get_format_type();
 
-                        let extractor = extractors_map.get(&document_format);
+                        if scanned.container_type == ContainerType::Archive {
+                            info!(target: LOG_TARGET, worker_id = worker_id, "Extracting from archive document: {:?}", document);
+                            document.set_status(DocumentStatus::Extracted);
 
-                        if let Some(extractor) = extractor {
-                            if scanned.container_type == ContainerType::Archive {
-                                info!(target: LOG_TARGET, worker_id = worker_id, "Extracting from archive document: {:?}", document);
-                                document.set_status(DocumentStatus::Extracted);
+                            buffer.push(scanned);
+                            continue;
+                        }
 
-                                buffer.push(scanned);
-                                continue;
-                            }
+                        match document_format {
+                            FormatType::Pdf => {
+                                if let Ok(data) = PdfExtractor::extract(document.clone()) {
+                                    match data {
+                                        DataExtracted::Text(content) => {
+                                            info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text, length: {}", content.len());
 
-                            match extractor.extract(document.clone()) {
-                                Ok(data) => match data {
-                                    DataExtracted::Text(content) => {
-                                        info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text, length: {}", content.len());
+                                            document.set_content(content);
+                                            document.set_status(DocumentStatus::Extracted);
 
-                                        //let content = build_text_content(text);
-
-                                        document.set_content(content);
-                                        document.set_status(DocumentStatus::Extracted);
-
-                                        buffer.push(scanned);
-                                    }
-                                    DataExtracted::ArchiveDocuments { archive, documents } => {
-                                        info!(target: LOG_TARGET, worker_id = worker_id, "Extracted {} documents from archive", documents.len());
-
-                                        let (resp_tx, resp_rx) =
-                                            unbounded_channel::<Result<Container, StorageError>>();
-
-                                        database_tx
-                                            .send(StorageCommand::SaveArchive {
-                                                archive,
-                                                resp_tx: Some(resp_tx),
-                                            })
-                                            .unwrap();
-
-                                        match resp_rx.recv() {
-                                            Ok(result) => match result {
-                                                Ok(archive) => {
-                                                    info!(target: LOG_TARGET, worker_id = worker_id, "Archive saved successfully with ID: {}", archive.get_id());
-
-                                                    for scanned_doc in documents {
-                                                        let mut doc = scanned_doc.document;
-                                                        doc.set_container_id(archive.get_id());
-                                                        channel_tx
-                                                            .send(ScannedDocument {
-                                                                container_type: scanned_doc
-                                                                    .container_type,
-                                                                document: doc,
-                                                            })
-                                                            .unwrap();
-                                                    }
-                                                }
-                                                Err(e) => {
-                                                    error!(target: LOG_TARGET, worker_id = worker_id, "Failed to save archive: {:?}", e);
-                                                }
-                                            },
-                                            Err(e) => {
-                                                error!(target: LOG_TARGET, worker_id = worker_id, "Failed to receive archive save response: {:?}", e);
-                                            }
+                                            buffer.push(scanned);
                                         }
+                                        _ => {}
                                     }
-                                },
-                                Err(e) => {
-                                    error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract text: {:?} ({})", e, document.get_path());
+                                } else {
+                                    error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract PDF document: {:?}", document);
                                 }
                             }
-                        } else {
-                            error!(target: LOG_TARGET, worker_id = worker_id, "No extractor found for document format: {:?}", document_format);
+                            FormatType::Docx => {
+                                if let Ok(data) = DocxExtractor::extract(document.clone()) {
+                                    match data {
+                                        DataExtracted::Text(content) => {
+                                            info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text, length: {}", content.len());
+
+                                            document.set_content(content);
+                                            document.set_status(DocumentStatus::Extracted);
+
+                                            buffer.push(scanned);
+                                        }
+                                        _ => {}
+                                    }
+                                } else {
+                                    error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract DOCX document: {:?}", document);
+                                }
+                            }
+                            FormatType::Text => {
+                                if let Ok(data) = TextExtractor::extract(document.clone()) {
+                                    match data {
+                                        DataExtracted::Text(content) => {
+                                            info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text, length: {}", content.len());
+
+                                            document.set_content(content);
+                                            document.set_status(DocumentStatus::Extracted);
+
+                                            buffer.push(scanned);
+                                        }
+                                        _ => {}
+                                    }
+                                } else {
+                                    error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract TEXT document: {:?}", document);
+                                }
+                            }
+                            FormatType::Archive(archive) => match archive {
+                                formats::Archive::Zip => {
+                                    let zip_extractor = ZipExtractor::new(scanner.clone());
+                                    match zip_extractor.extract(document.clone()) {
+                                        Ok(data) => match data {
+                                            DataExtracted::ArchiveDocuments {
+                                                archive,
+                                                documents,
+                                            } => {
+                                                info!(target: LOG_TARGET, worker_id = worker_id, "Extracted {} documents from ZIP archive", documents.len());
+
+                                                let (resp_tx, resp_rx) = unbounded_channel::<
+                                                    Result<Container, StorageError>,
+                                                >(
+                                                );
+
+                                                database_tx
+                                                    .send(StorageCommand::SaveArchive {
+                                                        archive,
+                                                        resp_tx: Some(resp_tx),
+                                                    })
+                                                    .unwrap();
+
+                                                match resp_rx.recv() {
+                                                    Ok(result) => match result {
+                                                        Ok(archive) => {
+                                                            info!(target: LOG_TARGET, worker_id = worker_id, "Archive saved successfully with ID: {}", archive.get_id());
+
+                                                            for scanned_doc in documents {
+                                                                let mut doc = scanned_doc.document;
+                                                                doc.set_container_id(
+                                                                    archive.get_id(),
+                                                                );
+                                                                channel_tx
+                                                                    .send(ScannedDocument {
+                                                                        container_type: scanned_doc
+                                                                            .container_type,
+                                                                        document: doc,
+                                                                    })
+                                                                    .unwrap();
+                                                            }
+                                                        }
+                                                        Err(e) => {
+                                                            error!(target: LOG_TARGET, worker_id = worker_id, "Failed to save archive: {:?}", e);
+                                                        }
+                                                    },
+                                                    Err(e) => {
+                                                        error!(target: LOG_TARGET, worker_id = worker_id, "Failed to receive archive save response: {:?}", e);
+                                                    }
+                                                }
+                                            }
+                                            _ => {}
+                                        },
+                                        Err(e) => {
+                                            error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract ZIP archive: {:?} ({})", e, document.get_path());
+                                        }
+                                    }
+                                }
+                            },
+                            FormatType::Unknown => {
+                                error!(target: LOG_TARGET, worker_id = worker_id, "Unknown document format for document: {:?}", document);
+                                continue;
+                            }
                         }
                     }
                     Err(ChannelRecvTimeoutError::Timeout) => {

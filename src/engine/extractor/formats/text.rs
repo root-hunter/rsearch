@@ -14,7 +14,7 @@ use crate::{
 pub struct TextExtractor;
 
 impl FileExtractor for TextExtractor {
-    fn extract(&self, document: Document) -> Result<DataExtracted, Box<dyn std::error::Error>> {
+    fn extract(document: Document) -> Result<DataExtracted, Box<dyn std::error::Error>> {
         let file = File::open(document.get_path())?;
         let reader = BufReader::new(file);
 

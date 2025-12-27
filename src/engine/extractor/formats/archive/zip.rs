@@ -24,8 +24,8 @@ impl ZipExtractor {
     }
 }
 
-impl FileExtractor for ZipExtractor {
-    fn extract(&self, document: Document) -> Result<DataExtracted, Box<dyn std::error::Error>> {
+impl ZipExtractor {
+    pub fn extract(&self, document: Document) -> Result<DataExtracted, Box<dyn std::error::Error>> {
         info!(target: LOG_TARGET, "Extracting files from ZIP archive: {}", document.get_path());
         info!(target: LOG_TARGET, "Using scanner: {:?}", self.scanner);
 

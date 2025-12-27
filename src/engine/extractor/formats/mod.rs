@@ -57,5 +57,5 @@ pub enum DataExtracted {
 }
 
 pub trait FileExtractor {
-    fn extract(&self, document: Document) -> Result<DataExtracted, Box<dyn std::error::Error>>;
+    fn extract(document: Document) -> Result<DataExtracted, Box<dyn std::error::Error>>;
 }
