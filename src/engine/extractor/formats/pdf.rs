@@ -42,7 +42,7 @@ impl FileExtractor for PdfExtractor {
 
         let reader = BufReader::new(text.as_bytes());
         let dist = TextTokensDistribution::from_buffer(reader);
-        let text = dist.export_string(500);
+        let text = dist.export_string_nth(500);
 
         Ok(DataExtracted::Text(text))
     }

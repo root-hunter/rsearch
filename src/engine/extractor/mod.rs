@@ -2,14 +2,13 @@ pub mod formats;
 pub mod worker;
 pub mod tokens;
 
-use std::{env, time::Duration};
+use std::{
+    env,
+    time::Duration,
+};
 
 use crate::{
-    engine::{
-        EngineTask, PipelineStage, Sender,
-        extractor::worker::ExtractorWorker,
-        scanner::{ScannedDocument, Scanner},
-    },
+    engine::{EngineTask, PipelineStage, Sender, extractor::worker::ExtractorWorker, scanner::{ScannedDocument, Scanner}},
     storage::commands::StorageCommand,
 };
 use once_cell::sync::Lazy;
@@ -21,7 +20,7 @@ static EXTRACTOR_INSERT_BATCH_SIZE: Lazy<usize> = Lazy::new(|| {
     env::var("EXTRACTOR_INSERT_BATCH_SIZE")
         .ok()
         .and_then(|s| s.parse().ok())
-        .unwrap_or(250)
+        .unwrap_or(100)
 });
 
 static EXTRACTOR_FLUSH_INTERVAL: Lazy<Duration> = Lazy::new(|| {
@@ -29,7 +28,7 @@ static EXTRACTOR_FLUSH_INTERVAL: Lazy<Duration> = Lazy::new(|| {
         .ok()
         .and_then(|s| s.parse::<u64>().ok()) // prova a parsare u64
         .map(Duration::from_millis)
-        .unwrap_or(Duration::from_millis(1000))
+        .unwrap_or(Duration::from_millis(5000))
 });
 
 #[derive(Debug)]
@@ -55,7 +54,7 @@ impl Extractor {
         }
     }
 }
-
+    
 impl PipelineStage<ScannedDocument> for Extractor {
     fn get_channel_senders(&self) -> Vec<Sender<ScannedDocument>> {
         self.workers
@@ -72,11 +71,11 @@ impl PipelineStage<ScannedDocument> for Extractor {
 
     fn add_worker(&mut self) {
         let index = self.workers.len();
-
+        
         info!(target: LOG_TARGET, "Starting extractor worker {}", index);
 
         let database_tx = self.database_tx.clone();
-
+        
         let mut worker = ExtractorWorker::new(index, database_tx, self.scanner.clone());
         worker.run();
         self.workers.push(worker);

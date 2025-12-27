@@ -50,12 +50,16 @@ impl TextTokensDistribution {
             .collect()
     }
 
-    pub fn export_string(&self, n: usize) -> String {
+    pub fn export_string_nth(&self, n: usize) -> String {
         let top_words = self.top_n(n);
         top_words
             .into_iter()
             .map(|(word, _)| word)
             .collect::<Vec<String>>()
             .join(" ")
+    }
+
+    pub fn export_string(&self) -> String {
+        self.export_string_nth(self.distribution.len())
     }
 }

@@ -19,7 +19,7 @@ impl FileExtractor for TextExtractor {
         let reader = BufReader::new(file);
 
         let dist = TextTokensDistribution::from_buffer(reader);
-        let content = dist.export_string(200);
+        let content = dist.export_string_nth(200);
 
         Ok(DataExtracted::Text(content))
     }
