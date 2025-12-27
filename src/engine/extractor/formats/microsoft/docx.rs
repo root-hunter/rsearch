@@ -1,5 +1,5 @@
 use crate::engine::extractor::formats::{DataExtracted, FileExtractor};
-use crate::entities::document::{self, Document};
+use crate::entities::document::Document;
 
 use zip::ZipArchive;
 use quick_xml::Reader;
@@ -41,7 +41,7 @@ impl FileExtractor for DocxExtractor {
         Ok(DataExtracted::Text(text))
     }
 
-    fn extract_compressed(&self, parent: Document, document: Document) -> Result<DataExtracted, Box<dyn std::error::Error>> {
+    fn extract_compressed(&self, _parent: Document, document: Document) -> Result<DataExtracted, Box<dyn std::error::Error>> {
         self.extract(document)
     }
 }

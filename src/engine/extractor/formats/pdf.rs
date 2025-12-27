@@ -3,7 +3,7 @@ use std::env;
 use once_cell::sync::Lazy;
 use pdfium_render::prelude::*;
 
-use crate::{engine::extractor::formats::{DataExtracted, FileExtractor}, entities::document::{self, Document}};
+use crate::{engine::extractor::formats::{DataExtracted, FileExtractor}, entities::document::Document};
 
 const LOG_TARGET: &str = "extractor_pdf";
 
@@ -39,7 +39,7 @@ impl FileExtractor for PdfExtractor {
         Ok(DataExtracted::Text(text))
     }
 
-    fn extract_compressed(&self, parent: Document, document: Document) -> Result<DataExtracted, Box<dyn std::error::Error>> {
+    fn extract_compressed(&self, _parent: Document, document: Document) -> Result<DataExtracted, Box<dyn std::error::Error>> {
         self.extract(document)
     }
 }

@@ -58,7 +58,7 @@ impl FileExtractor for ZipExtractor {
         })
     }
 
-    fn extract_compressed(&self, parent: Document, document: Document) -> Result<DataExtracted, Box<dyn std::error::Error>> {
+    fn extract_compressed(&self, _parent: Document, document: Document) -> Result<DataExtracted, Box<dyn std::error::Error>> {
         self.extract(document)
     }
 }

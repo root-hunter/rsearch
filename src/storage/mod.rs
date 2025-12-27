@@ -9,7 +9,7 @@ use tracing::{error, info, warn};
 use crate::{
     engine::{EngineTask, Receiver, Sender, unbounded_channel},
     entities::{
-        container::{self, Container, ContainerType},
+        container::{self, Container},
         document::Document,
     },
     storage::commands::StorageCommand,
