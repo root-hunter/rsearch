@@ -14,6 +14,12 @@ fmt:
 clippy:
 	cargo clippy --all -- -D warnings
 
+audit-check:
+	cargo audit
+
+deny-warnings:
+	cargo deny check
+
 PDFIUM_ARCH=linux-x64
 
 install-pdfium:
