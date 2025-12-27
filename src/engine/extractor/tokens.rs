@@ -2,17 +2,9 @@ use std::{collections::HashMap, io::{BufRead, BufReader, Read}};
 
 pub const MIN_TOKEN_LENGTH: usize = 3;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct TextTokensDistribution {
     distribution: HashMap<String, usize>,
-}
-
-impl Default for TextTokensDistribution {
-    fn default() -> Self {
-        TextTokensDistribution {
-            distribution: HashMap::new(),
-        }
-    }
 }
 
 impl TextTokensDistribution {
@@ -24,11 +16,9 @@ impl TextTokensDistribution {
     pub fn from_buffer(reader: BufReader<impl Read>) -> Self {
         let mut dist = TextTokensDistribution::default();
 
-        for line in reader.lines() {
-            if let Ok(line) = line {
-                for word in Self::get_tokens(&line) {
-                    dist.add_word(word);
-                }
+        for line in reader.lines().map_while(Result::ok) {
+            for word in Self::get_tokens(&line) {
+                dist.add_word(word);
             }
         }
 
