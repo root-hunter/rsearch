@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display, path::Path};
+use std::{collections::HashMap, fmt::Display, path::Path, str::FromStr};
 
 use tracing::info;
 
@@ -253,7 +253,7 @@ impl Document {
     }
 
     pub fn get_format_type(&self) -> FormatType {
-        FormatType::get_by_extension(self.extension.as_deref().unwrap_or(""))
+        FormatType::from_str(self.extension.as_deref().unwrap_or("")).unwrap_or(FormatType::Unknown)
     }
 
     pub fn get_status(&self) -> &DocumentStatus {

@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::{
     engine::scanner::ScannedDocument,
     entities::{container::Container, document::Document},
@@ -26,9 +28,11 @@ pub enum FormatType {
     Unknown,
 }
 
-impl FormatType {
-    pub fn get_by_extension(extension: &str) -> FormatType {
-        match extension.to_lowercase().as_str() {
+impl FromStr for FormatType {
+    type Err = ();
+
+    fn from_str(input: &str) -> Result<FormatType, Self::Err> {
+        let format = match input.to_lowercase().as_str() {
             "pdf" => FormatType::Pdf,
             "docx" => FormatType::Docx,
             "txt" => FormatType::Text,
@@ -37,7 +41,9 @@ impl FormatType {
             // "rar" => FormatType::Archive(Archive::Rar),
             // "7z" => FormatType::Archive(Archive::SevenZ),
             _ => FormatType::Unknown,
-        }
+        };
+
+        Ok(format) 
     }
 }
 
