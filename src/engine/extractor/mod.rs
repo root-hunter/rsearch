@@ -19,7 +19,7 @@ static EXTRACTOR_INSERT_BATCH_SIZE: Lazy<usize> = Lazy::new(|| {
     env::var("EXTRACTOR_INSERT_BATCH_SIZE")
         .ok()
         .and_then(|s| s.parse().ok())
-        .unwrap_or(100)
+        .unwrap_or(250)
 });
 
 static EXTRACTOR_FLUSH_INTERVAL: Lazy<Duration> = Lazy::new(|| {
@@ -27,7 +27,7 @@ static EXTRACTOR_FLUSH_INTERVAL: Lazy<Duration> = Lazy::new(|| {
         .ok()
         .and_then(|s| s.parse::<u64>().ok()) // prova a parsare u64
         .map(Duration::from_millis)
-        .unwrap_or(Duration::from_millis(5000))
+        .unwrap_or(Duration::from_millis(1000))
 });
 
 #[derive(Debug)]

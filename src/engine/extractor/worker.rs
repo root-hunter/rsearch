@@ -178,7 +178,6 @@ impl EngineTask<ScannedDocument> for ExtractorWorker {
                                                                 container_type: scanned_doc
                                                                     .container_type,
                                                                 document: doc,
-                                                                parent: scanned_doc.parent,
                                                             })
                                                             .unwrap();
                                                     }

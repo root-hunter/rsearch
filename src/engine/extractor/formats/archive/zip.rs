@@ -43,7 +43,6 @@ impl FileExtractor for ZipExtractor {
                 documents.push(ScannedDocument {
                     container_type: ContainerType::Archive,
                     document: doc,
-                    parent: Some(document.clone()),
                 });
             } else {
                 continue;
