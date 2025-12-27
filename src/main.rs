@@ -46,5 +46,7 @@ fn main() {
         scanner.scan_folder("/home/roothunter/Documents");
     });
 
-    loop {}
+    loop {
+        thread::sleep(std::time::Duration::from_secs(10));
+    }
 }

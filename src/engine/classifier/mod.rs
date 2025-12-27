@@ -25,6 +25,8 @@ impl Default for Classifier {
 
 impl PipelineStage<Document> for Classifier {
     fn get_channel_senders(&self) -> Vec<Sender<Document>> {
+        _ = self.database_tx;
+        
         self.workers
             .iter()
             .map(|worker| worker.get_channel_sender().clone())
