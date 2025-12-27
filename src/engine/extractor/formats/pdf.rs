@@ -4,7 +4,7 @@ use once_cell::sync::Lazy;
 use pdfium_render::prelude::*;
 
 use crate::{
-    engine::extractor::formats::{DataExtracted, FileExtractor, text::TextDistribution},
+    engine::extractor::{formats::{DataExtracted, FileExtractor}, tokens::TextTokensDistribution},
     entities::document::Document,
 };
 
@@ -41,7 +41,7 @@ impl FileExtractor for PdfExtractor {
         }
 
         let reader = BufReader::new(text.as_bytes());
-        let dist = TextDistribution::from_buffer(reader);
+        let dist = TextTokensDistribution::from_buffer(reader);
         let text = dist.export_string(500);
 
         Ok(DataExtracted::Text(text))

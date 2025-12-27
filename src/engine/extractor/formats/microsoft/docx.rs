@@ -1,4 +1,4 @@
-use crate::engine::extractor::formats::text::TextDistribution;
+use crate::engine::extractor::tokens::TextTokensDistribution;
 use crate::engine::extractor::formats::{DataExtracted, FileExtractor};
 use crate::entities::document::Document;
 
@@ -40,7 +40,7 @@ impl FileExtractor for DocxExtractor {
         }
 
         let reader = std::io::BufReader::new(text.as_bytes());
-        let dist = TextDistribution::from_buffer(reader);
+        let dist = TextTokensDistribution::from_buffer(reader);
         let text = dist.export_string(500);
 
         Ok(DataExtracted::Text(text))
