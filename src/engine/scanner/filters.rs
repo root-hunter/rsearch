@@ -44,8 +44,8 @@ pub struct Filter {
     filename_regex: Option<String>,
 }
 
-impl Filter {
-    pub fn new() -> Self {
+impl Default for Filter {
+    fn default() -> Self {
         Filter {
             case_sensitive: true,
             filename_contains: None,
@@ -57,7 +57,9 @@ impl Filter {
             filename_regex: None,
         }
     }
+}
 
+impl Filter {
     pub fn set_filename_contains(&mut self, substring: &str) {
         self.filename_contains = Some(StringCondition {
             substring: substring.to_string(),
@@ -111,10 +113,7 @@ impl Filter {
             } else {
                 Regex::new(&format!("(?i){}", pattern))
             };
-            match regex_builder {
-                Ok(r) => Some(r),
-                Err(_) => None,
-            }
+            regex_builder.ok()
         } else {
             None
         }

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path};
+use std::{collections::HashMap, path, str::FromStr};
 
 use crate::{engine::scanner::ScannedDocument, entities::document::Document};
 
@@ -13,15 +13,19 @@ pub enum ContainerType {
     Archive,
 }
 
-impl ContainerType {
-    pub fn from_str(s: &str) -> Self {
+impl FromStr for ContainerType {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "Folder" => ContainerType::Folder,
-            "Archive" => ContainerType::Archive,
-            _ => ContainerType::Folder,
+            "Folder" => Ok(ContainerType::Folder),
+            "Archive" => Ok(ContainerType::Archive),
+            _ => Err(()),
         }
     }
+}
 
+impl ContainerType {
     pub fn to_str(&self) -> &str {
         match self {
             ContainerType::Folder => "Folder",
@@ -106,7 +110,7 @@ impl Container {
 
         if let Ok(container) = stmt.query_row([path, container_type_str], |row| {
             let container_type_str: String = row.get(2)?;
-            let container_type = ContainerType::from_str(&container_type_str);
+            let container_type = ContainerType::from_str(&container_type_str).expect("Invalid container type");
 
             Ok(Container {
                 id: row.get(0)?,
@@ -122,7 +126,7 @@ impl Container {
             [path],
             |row| {
                 let container_type_str: String = row.get(2)?;
-                let container_type = ContainerType::from_str(&container_type_str);
+                let container_type = ContainerType::from_str(&container_type_str).expect("Invalid container type");
 
                 Ok(Container {
                     id: row.get(0)?,

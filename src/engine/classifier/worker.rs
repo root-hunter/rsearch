@@ -57,18 +57,13 @@ impl EngineTask<Document> for ClassifierWorker {
     fn run(&mut self) {
         let timeout = std::time::Duration::from_millis(200);
 
-        loop {
-            if let Ok(document) = self.channel_rx.recv_timeout(timeout) {
-                info!(
-                    target: LOG_TARGET,
-                    id = self.id,
-                    "Received document for classification: {:?}",
-                    document.get_id()
-                );
-                // Here would be the classification logic
-            } else {
-                break; // Exit loop if channel is closed
-            }
+        while let Ok(document) = self.channel_rx.recv_timeout(timeout) {
+            info!(
+            target: LOG_TARGET,
+            id = self.id,
+            "Received document for classification: {:?}",
+                document.get_id()
+            );
         }
     }
 }

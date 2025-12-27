@@ -15,16 +15,16 @@ fn main() {
     init_logging();
     StorageEngine::initialize().expect("Failed to initialize storage engine");
 
-    let mut storage = StorageEngine::new();
+    let mut storage = StorageEngine::default();
     storage.run();
 
-    let mut scanner = Scanner::new();
-    let mut filter1 = Filter::new();
+    let mut scanner = Scanner::default();
+    let mut filter1 = Filter::default();
     filter1.set_case_sensitive(false);
     //filter1.set_filename_contains("report");
     filter1.set_extension_is("zip");
 
-    let mut filter2 = Filter::new();
+    let mut filter2 = Filter::default();
     filter2.set_extension_is("pdf");
 
     scanner.set_filters_mode(FiltersMode::Or);
@@ -35,7 +35,7 @@ fn main() {
     let mut extractor = Extractor::new(storage.get_channel_sender().clone(), scanner.clone());
     extractor.init(16);
 
-    let mut classifier = Classifier::new();
+    let mut classifier = Classifier::default();
     classifier.init(2);
 
     let channels = extractor.get_channel_senders();

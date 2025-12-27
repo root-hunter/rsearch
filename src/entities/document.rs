@@ -37,8 +37,8 @@ pub struct Document {
     container_id: Option<i64>,
 }
 
-impl Document {
-    pub fn new() -> Self {
+impl Default for Document {
+    fn default() -> Self {
         Document {
             id: None,
             path: String::new(),
@@ -50,7 +50,9 @@ impl Document {
             container_id: None,
         }
     }
+}
 
+impl Document {
     pub fn from_path(path: &Path) -> Self {
         let filename = path
             .file_name()
@@ -144,10 +146,8 @@ impl Document {
             rusqlite::params![self.path, self.filename, self.extension, self.get_status_str(), self.container_id],
         )
         .map_err(|err| {
-            if let rusqlite::Error::SqliteFailure(ref err_code, _) = err {
-                if err_code.code == rusqlite::ErrorCode::ConstraintViolation {
-                    return DocumentError::ConstraintViolation;
-                }
+            if let rusqlite::Error::SqliteFailure(ref err_code, _) = err && err_code.code == rusqlite::ErrorCode::ConstraintViolation {
+                return DocumentError::ConstraintViolation;
             }
             DocumentError::DatabaseError(err)
         })?;
@@ -185,9 +185,9 @@ impl Document {
 
     pub fn _get_id(&self, conn: &rusqlite::Connection) -> Result<i64, DocumentError> {
         if let Some(id) = self.id {
-            return Ok(id);
+            Ok(id)
         } else {
-            return self.get_id_by_path(conn);
+            self.get_id_by_path(conn)
         }
     }
 
@@ -210,9 +210,7 @@ impl Document {
                     .map(|p| p.to_string_lossy().to_string())
                     .unwrap_or_default();
 
-                let container_id = container_cache.get(&container_path).unwrap().get_id();
-
-                container_id
+                container_cache.get(&container_path).unwrap().get_id()
             };
 
             tx.execute(
@@ -220,10 +218,9 @@ impl Document {
                 rusqlite::params![document.filename, document.extension, document.get_status_str(), container_id],
             )
             .map_err(|err| {
-                if let rusqlite::Error::SqliteFailure(ref err_code, _) = err {
-                    if err_code.code == rusqlite::ErrorCode::ConstraintViolation {
-                        return DocumentError::ConstraintViolation;
-                    }
+                if let rusqlite::Error::SqliteFailure(ref err_code, _) = err  
+                    && err_code.code == rusqlite::ErrorCode::ConstraintViolation{
+                    return DocumentError::ConstraintViolation;
                 }
                 DocumentError::DatabaseError(err)
             })?;

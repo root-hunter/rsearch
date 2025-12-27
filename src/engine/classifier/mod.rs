@@ -6,7 +6,7 @@ use crate::{
     storage::commands::StorageCommand,
 };
 
-const LOG_TARGET: &str = "classifier";
+//const LOG_TARGET: &str = "classifier";
 
 #[derive(Debug)]
 pub struct Classifier {
@@ -14,8 +14,8 @@ pub struct Classifier {
     workers: Vec<ClassifierWorker>,
 }
 
-impl Classifier {
-    pub fn new() -> Self {
+impl Default for Classifier {
+    fn default() -> Self {
         Classifier {
             database_tx: crate::engine::unbounded_channel::<StorageCommand>().0,
             workers: Vec::new(),

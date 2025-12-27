@@ -8,6 +8,12 @@ run-release:
 	cargo build --release
 	RUST_LOG=info RUST_BACKTRACE=1 ./target/release/rsearch
 
+fmt:
+	cargo fmt --all
+
+clippy:
+	cargo clippy --all -- -D warnings
+
 PDFIUM_ARCH=linux-x64
 
 install-pdfium:

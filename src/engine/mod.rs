@@ -7,7 +7,7 @@ pub mod extractor;
 pub mod scanner;
 pub mod utils;
 
-const LOG_TARGET: &str = "engine";
+//const LOG_TARGET: &str = "engine";
 
 pub type Sender<T> = crossbeam::channel::Sender<T>;
 pub type Receiver<T> = crossbeam::channel::Receiver<T>;
@@ -22,17 +22,9 @@ pub enum EngineError {
     ExtractorError(extractor::ExtractorError),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Engine {
     pub classifier: classifier::Classifier,
-}
-
-impl Engine {
-    pub fn new() -> Self {
-        Engine {
-            classifier: classifier::Classifier::new(),
-        }
-    }
 }
 
 pub trait PipelineStage<T> {

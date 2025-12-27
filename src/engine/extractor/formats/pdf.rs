@@ -8,7 +8,7 @@ use crate::{
     entities::document::Document,
 };
 
-const LOG_TARGET: &str = "extractor_pdf";
+//const LOG_TARGET: &str = "extractor_pdf";
 
 pub static PDFIUM_LIB_PATH: Lazy<&'static str> = Lazy::new(|| {
     Box::leak(

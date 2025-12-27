@@ -7,7 +7,7 @@ use std::fs::File;
 use std::io::Read;
 use zip::ZipArchive;
 
-const LOG_TARGET: &str = "extractor_docx";
+//const LOG_TARGET: &str = "extractor_docx";
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DocxExtractor;

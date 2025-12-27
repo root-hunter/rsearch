@@ -33,13 +33,13 @@ pub fn text_extract_distribution(text: String) -> Vec<String> {
     let text = text_normalize(&text);
 
     for word in text.split(' ') {
-        let word = word.replace('\n', "").replace('\r', "");
+        let word = word.replace(['\n', '\r'], "");
 
         if word.len() < *EXTRACTOR_MIN_WORD_LENGTH {
             continue;
         }
 
-        *distribution.entry(word.into()).or_insert(0) += 1;
+        *distribution.entry(word).or_insert(0) += 1;
     }
 
     let mut words: Vec<_> = distribution.into_iter().collect();

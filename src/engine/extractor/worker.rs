@@ -20,7 +20,7 @@ use crate::{
     },
     storage::{StorageError, commands::StorageCommand},
 };
-use tracing::{error, info, warn};
+use tracing::{error, info};
 
 const LOG_TARGET: &str = "extractor_worker";
 
@@ -43,9 +43,9 @@ impl ExtractorWorker {
         ExtractorWorker {
             id,
             database_tx,
+            scanner,
             channel_tx: tx,
             channel_rx: rx,
-            scanner: scanner,
             thread_handle: None,
         }
     }
@@ -64,7 +64,8 @@ impl ExtractorWorker {
             "Saving batch"
         );
 
-        let batch = buffer.drain(..).collect::<Vec<_>>();
+        //let batch = buffer.drain(..).collect::<Vec<_>>();
+        let batch = std::mem::take(buffer);
 
         database_tx
             .send(StorageCommand::SaveBulkDocuments {
@@ -163,7 +164,7 @@ impl EngineTask<ScannedDocument> for ExtractorWorker {
 
                                         database_tx
                                             .send(StorageCommand::SaveArchive {
-                                                archive: archive,
+                                                archive,
                                                 resp_tx: Some(resp_tx),
                                             })
                                             .unwrap();
@@ -204,7 +205,7 @@ impl EngineTask<ScannedDocument> for ExtractorWorker {
                         }
                     }
                     Err(ChannelRecvTimeoutError::Timeout) => {
-                        warn!(target: LOG_TARGET, worker_id = worker_id, "Receive timeout, checking for flush");
+                        // Check if we need to flush the buffer
                     }
                     Err(e) => {
                         error!(target: LOG_TARGET, "Channel receive error: {:?}", e);

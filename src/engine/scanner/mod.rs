@@ -44,8 +44,8 @@ pub struct Scanner {
     last_channel_index: usize,
 }
 
-impl Scanner {
-    pub fn new() -> Self {
+impl Default for Scanner {
+    fn default() -> Self {
         Scanner {
             filters_mode: FiltersMode::And,
             filters: Vec::new(),
@@ -53,7 +53,9 @@ impl Scanner {
             last_channel_index: 0,
         }
     }
+}
 
+impl Scanner {
     pub fn check_filters(&self, path: &Path) -> bool {
         if self.filters.is_empty() {
             return true;
@@ -111,15 +113,14 @@ impl Scanner {
     fn process_document(&mut self, document: Document) {
         let channel = self.channels.get(self.last_channel_index);
 
-        channel.as_ref().map(|tx| {
-            if let Err(e) = tx.send(ScannedDocument {
+        if let Some(tx) = channel.as_ref()
+            && let Err(e) = tx.send(ScannedDocument {
                 container_type: ContainerType::Folder, // You might want to set this appropriately
                 document: document.clone(),
-            }) {
-                error!(target: LOG_TARGET, "Failed to send document to extractor: {:?}", e);
-            }
-        });
-
+            })
+        {
+            error!(target: LOG_TARGET, "Failed to send document to extractor: {:?}", e);
+        }
         self.last_channel_index = (self.last_channel_index + 1) % self.channels.len();
     }
 

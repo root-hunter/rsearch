@@ -3,7 +3,7 @@ use crate::{
     entities::document::Document,
 };
 
-const LOG_TARGET: &str = "extractor_text";
+//const LOG_TARGET: &str = "extractor_text";
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TextExtractor;

@@ -18,6 +18,11 @@ use crate::{
 const LOG_TARGET: &str = "storage";
 const WORKER_RECEIVE_TIMEOUT_MS: u64 = 100;
 
+const DB_JOURNAL_MODE: &str = "WAL";
+const DB_CACHE_SIZE: &str = "-2000"; // 2MB
+const DB_TEMP_STORE: &str = "MEMORY";
+const DB_LOCKING_MODE: &str = "EXCLUSIVE";
+
 pub static STORAGE_DATABASE_PATH: Lazy<&'static str> = Lazy::new(|| {
     Box::leak(
         env::var("DATABASE_FILE")
@@ -41,17 +46,19 @@ pub struct StorageEngine {
     thread_handle: Option<std::thread::JoinHandle<Result<(), StorageError>>>,
 }
 
-impl StorageEngine {
-    pub fn new() -> Self {
+impl Default for StorageEngine {
+    fn default() -> Self {
         let (tx, rx) = unbounded_channel::<StorageCommand>();
 
-        StorageEngine {
+        Self {
             channel_tx: tx,
             channel_rx: rx,
             thread_handle: None,
         }
     }
+}
 
+impl StorageEngine {
     pub fn initialize() -> Result<(), StorageError> {
         let conn = rusqlite::Connection::open(*STORAGE_DATABASE_PATH)
             .map_err(StorageError::InitializationError)?;
@@ -59,14 +66,15 @@ impl StorageEngine {
         info!(target: LOG_TARGET, "Initializing storage engine");
 
         info!(target: LOG_TARGET, "Setting SQLite pragmas");
-        conn.pragma_update(None, "journal_mode", &"WAL")
+
+        conn.pragma_update(None, "journal_mode", DB_JOURNAL_MODE)
             .map_err(StorageError::InitializationError)?;
 
-        conn.pragma_update(None, "cache_size", &"-2000")
+        conn.pragma_update(None, "cache_size", DB_CACHE_SIZE)
             .map_err(StorageError::InitializationError)?;
-        conn.pragma_update(None, "temp_store", &"MEMORY")
+        conn.pragma_update(None, "temp_store", DB_TEMP_STORE)
             .map_err(StorageError::InitializationError)?;
-        conn.pragma_update(None, "locking_mode", &"EXCLUSIVE")
+        conn.pragma_update(None, "locking_mode", DB_LOCKING_MODE)
             .map_err(StorageError::InitializationError)?;
 
         info!(target: LOG_TARGET, "Creating necessary tables and indexes");
@@ -179,7 +187,7 @@ impl EngineTask<StorageCommand> for StorageEngine {
                         } => {
                             info!(target: LOG_TARGET, "Saving document: {:?}", document);
 
-                            if let Err(e) = document.save(&mut conn) {
+                            if let Err(e) = document.save(&conn) {
                                 error!(target: LOG_TARGET, "Failed to save document: {:?}", e);
                             }
 
@@ -232,9 +240,6 @@ impl EngineTask<StorageCommand> for StorageEngine {
                             } else {
                                 warn!(target: LOG_TARGET, "No response channel provided for SaveArchive command");
                             }
-                        }
-                        _ => {
-                            error!(target: LOG_TARGET, "Unknown storage command received");
                         }
                     }
                 }
