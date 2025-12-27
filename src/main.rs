@@ -27,10 +27,14 @@ fn main() {
     let mut filter2 = Filter::default();
     filter2.set_extension_is("pdf");
 
+    let mut filter3 = Filter::default();
+    filter3.set_extension_is("txt");
+
     scanner.set_filters_mode(FiltersMode::Or);
 
     scanner.add_filter(filter1);
     scanner.add_filter(filter2);
+    // scanner.add_filter(filter3);
 
     let mut extractor = Extractor::new(storage.get_channel_sender().clone(), scanner.clone());
     extractor.init(16);
@@ -43,7 +47,7 @@ fn main() {
     scanner.add_channel_senders(channels);
 
     let _t2 = thread::spawn(move || {
-        scanner.scan_folder("/home/roothunter/Documents");
+        scanner.scan_folder("/home/roothunter");
     });
 
     loop {

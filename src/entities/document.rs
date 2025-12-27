@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::Path};
+use std::{collections::HashMap, fmt::Display, path::Path};
 
 use tracing::info;
 
@@ -35,6 +35,13 @@ pub struct Document {
     description: String,
     status: DocumentStatus,
     container_id: Option<i64>,
+}
+
+impl Display for Document {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Document {{ id: {:?}, path: {}, filename: {}, extension: {:?}, status: {:?}, container_id: {:?} }}",
+            self.id, self.path, self.filename, self.extension, self.status, self.container_id)
+    }
 }
 
 impl Default for Document {

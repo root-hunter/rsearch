@@ -1,10 +1,13 @@
-run:
+clear-db:
 	rm -rf ./storage.db
+	rm -rf ./storage.db-shm
+	rm -rf ./storage.db-wal
+
+run: clear-db
 	cargo build
 	RUST_LOG=info RUST_BACKTRACE=1 ./target/debug/rsearch
 
-run-release:
-	rm -rf ./storage.db
+run-release: clear-db
 	cargo build --release
 	RUST_LOG=info RUST_BACKTRACE=1 ./target/release/rsearch
 

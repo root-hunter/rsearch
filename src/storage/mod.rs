@@ -198,7 +198,7 @@ impl EngineTask<StorageCommand> for StorageEngine {
                             }
                         }
                         StorageCommand::SaveBulkDocuments { documents, resp_tx } => {
-                            info!(target: LOG_TARGET, "Saving bulk documents: {:?}", documents);
+                            info!(target: LOG_TARGET, "Saving bulk documents");
 
                             if let Err(e) = container::Container::update_cache_from_documents(
                                 &mut conn,
