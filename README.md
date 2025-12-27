@@ -5,7 +5,7 @@ It indexes files from your system, extracts text (PDF, TXT, etc.), and stores th
 
 ---
 
-![rsearch pipeline v1](docs/pipeline/pipeline.v1.png)
+![rsearch pipeline v1](docs/pipeline/pipeline.png)
 
 
 ## Features
