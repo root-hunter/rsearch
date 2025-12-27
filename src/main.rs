@@ -33,7 +33,7 @@ fn main() {
     scanner.add_filter(filter2);
 
     let mut extractor = Extractor::new(storage.get_channel_sender().clone(), scanner.clone());
-    extractor.init(4);
+    extractor.init(16);
 
     let mut classifier = Classifier::new();
     classifier.init(2);
