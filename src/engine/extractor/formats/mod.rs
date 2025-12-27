@@ -1,9 +1,12 @@
-use crate::{engine::scanner::ScannedDocument, entities::{container::Container, document::Document}};
+use crate::{
+    engine::scanner::ScannedDocument,
+    entities::{container::Container, document::Document},
+};
 
-pub mod text;
-pub mod pdf;
-pub mod microsoft;
 pub mod archive;
+pub mod microsoft;
+pub mod pdf;
+pub mod text;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Archive {
@@ -41,7 +44,7 @@ impl FormatType {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DataExtracted {
     Text(String),
-    ArchiveDocuments{
+    ArchiveDocuments {
         archive: Container,
         documents: Vec<ScannedDocument>,
     },
@@ -49,6 +52,9 @@ pub enum DataExtracted {
 
 pub trait FileExtractor {
     fn extract(&self, document: Document) -> Result<DataExtracted, Box<dyn std::error::Error>>;
-    fn extract_compressed(&self, parent: Document, document: Document) -> Result<DataExtracted, Box<dyn std::error::Error>>;
-
+    fn extract_compressed(
+        &self,
+        parent: Document,
+        document: Document,
+    ) -> Result<DataExtracted, Box<dyn std::error::Error>>;
 }

@@ -1,8 +1,12 @@
-use crate::{engine::{Sender, scanner::ScannedDocument}, entities::{container::Container, document::Document}, storage::StorageError};
+use crate::{
+    engine::{Sender, scanner::ScannedDocument},
+    entities::{container::Container, document::Document},
+    storage::StorageError,
+};
 
 #[derive(Debug, Clone)]
 pub enum StorageCommand {
-    SaveDocument{
+    SaveDocument {
         document: Document,
         resp_tx: Option<Sender<Result<(), StorageError>>>,
     },
@@ -10,7 +14,7 @@ pub enum StorageCommand {
         archive: Container,
         resp_tx: Option<Sender<Result<Container, StorageError>>>,
     },
-    SaveBulkDocuments{
+    SaveBulkDocuments {
         documents: Vec<ScannedDocument>,
         resp_tx: Option<Sender<Result<(), StorageError>>>,
     },

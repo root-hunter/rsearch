@@ -1,7 +1,10 @@
 pub mod worker;
 
-
-use crate::{engine::{EngineTask, PipelineStage, Sender, classifier::worker::ClassifierWorker}, entities::document::Document, storage::commands::StorageCommand};
+use crate::{
+    engine::{EngineTask, PipelineStage, Sender, classifier::worker::ClassifierWorker},
+    entities::document::Document,
+    storage::commands::StorageCommand,
+};
 
 const LOG_TARGET: &str = "classifier";
 
@@ -34,7 +37,5 @@ impl PipelineStage<Document> for Classifier {
             .map(|worker| worker.get_channel_sender().clone())
     }
 
-    fn add_worker(&mut self) {
-        
-    }
+    fn add_worker(&mut self) {}
 }

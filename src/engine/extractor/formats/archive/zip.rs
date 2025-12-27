@@ -1,12 +1,21 @@
 use tracing::info;
 
-use crate::{engine::{extractor::formats::{DataExtracted, FileExtractor}, scanner::{ScannedDocument, Scanner}}, entities::{container::{Container, ContainerType}, document::{Document, DocumentStatus}}};
+use crate::{
+    engine::{
+        extractor::formats::{DataExtracted, FileExtractor},
+        scanner::{ScannedDocument, Scanner},
+    },
+    entities::{
+        container::{Container, ContainerType},
+        document::{Document, DocumentStatus},
+    },
+};
 
 const LOG_TARGET: &str = "extractor_zip";
 
 #[derive(Debug, Clone)]
 pub struct ZipExtractor {
-    scanner: Scanner
+    scanner: Scanner,
 }
 
 impl ZipExtractor {
@@ -51,13 +60,17 @@ impl FileExtractor for ZipExtractor {
 
         let archive_container = Container::from_document(&document, ContainerType::Archive);
 
-        Ok(DataExtracted::ArchiveDocuments{
+        Ok(DataExtracted::ArchiveDocuments {
             archive: archive_container,
             documents,
         })
     }
 
-    fn extract_compressed(&self, _parent: Document, document: Document) -> Result<DataExtracted, Box<dyn std::error::Error>> {
+    fn extract_compressed(
+        &self,
+        _parent: Document,
+        document: Document,
+    ) -> Result<DataExtracted, Box<dyn std::error::Error>> {
         self.extract(document)
     }
 }

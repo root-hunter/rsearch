@@ -14,10 +14,13 @@ use crate::{
         scanner::{ScannedDocument, Scanner},
         unbounded_channel,
     },
-    entities::{container::{Container, ContainerType}, document::DocumentStatus},
+    entities::{
+        container::{Container, ContainerType},
+        document::DocumentStatus,
+    },
     storage::{StorageError, commands::StorageCommand},
 };
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 const LOG_TARGET: &str = "extractor_worker";
 
@@ -191,9 +194,6 @@ impl EngineTask<ScannedDocument> for ExtractorWorker {
                                             }
                                         }
                                     }
-                                    _ => {
-                                        error!(target: LOG_TARGET, worker_id = worker_id, "Unsupported extracted data type for document: {:?}", document);
-                                    }
                                 },
                                 Err(e) => {
                                     error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract text: {:?} ({})", e, document.get_path());
@@ -204,7 +204,7 @@ impl EngineTask<ScannedDocument> for ExtractorWorker {
                         }
                     }
                     Err(ChannelRecvTimeoutError::Timeout) => {
-                        // Timeout occurred, check if we need to flush
+                        warn!(target: LOG_TARGET, worker_id = worker_id, "Receive timeout, checking for flush");
                     }
                     Err(e) => {
                         error!(target: LOG_TARGET, "Channel receive error: {:?}", e);

@@ -4,7 +4,16 @@ use std::path::Path;
 
 use tracing::{error, info};
 
-use crate::{engine::{Sender, scanner::filters::{Filter, FilterError}}, entities::{container::ContainerType, document::{Document, DocumentStatus}}};
+use crate::{
+    engine::{
+        Sender,
+        scanner::filters::{Filter, FilterError},
+    },
+    entities::{
+        container::ContainerType,
+        document::{Document, DocumentStatus},
+    },
+};
 
 const LOG_TARGET: &str = "scanner";
 
@@ -23,7 +32,7 @@ pub enum FiltersMode {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 
 pub struct ScannedDocument {
-    pub container_type: ContainerType, 
+    pub container_type: ContainerType,
     pub document: Document,
 }
 
@@ -101,7 +110,7 @@ impl Scanner {
 
     fn process_document(&mut self, document: Document) {
         let channel = self.channels.get(self.last_channel_index);
-        
+
         channel.as_ref().map(|tx| {
             if let Err(e) = tx.send(ScannedDocument {
                 container_type: ContainerType::Folder, // You might want to set this appropriately

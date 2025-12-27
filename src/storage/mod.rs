@@ -212,7 +212,10 @@ impl EngineTask<StorageCommand> for StorageEngine {
                                 warn!(target: LOG_TARGET, "No response channel provided for SaveBulkDocuments command");
                             }
                         }
-                        StorageCommand::SaveArchive { mut archive, resp_tx } => {
+                        StorageCommand::SaveArchive {
+                            mut archive,
+                            resp_tx,
+                        } => {
                             info!(target: LOG_TARGET, "Saving archive: {:?}", archive);
 
                             if let Err(e) = archive.save(&mut conn) {

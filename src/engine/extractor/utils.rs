@@ -19,7 +19,8 @@ static EXTRACTOR_MIN_WORD_LENGTH: Lazy<usize> = Lazy::new(|| {
 });
 
 pub fn text_normalize(text: &str) -> String {
-    let s: String = text.chars()
+    let s: String = text
+        .chars()
         .filter(|c| c.is_alphanumeric() || c.is_whitespace())
         .collect();
 
@@ -37,7 +38,7 @@ pub fn text_extract_distribution(text: String) -> Vec<String> {
         if word.len() < *EXTRACTOR_MIN_WORD_LENGTH {
             continue;
         }
-        
+
         *distribution.entry(word.into()).or_insert(0) += 1;
     }
 
