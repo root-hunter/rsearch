@@ -1,27 +1,26 @@
-use std::thread;
-
 use rsearch::{
     engine::{
         EngineTask, PipelineStage,
-        classifier::Classifier,
         extractor::Extractor,
-        scanner::{FiltersMode, ScannedDocument, Scanner, filters::Filter},
+        scanner::{self, FiltersMode, ScannedDocument, Scanner, filters::Filter},
         unbounded_channel,
     },
     init_logging,
     storage::StorageEngine,
 };
+use tracing::warn;
 
 fn main() {
     init_logging();
     StorageEngine::initialize().expect("Failed to initialize storage engine");
 
+    let (scanner_tx, scanner_rx) = unbounded_channel::<String>();
     let (extractor_tx, extractor_rx) = unbounded_channel::<ScannedDocument>();
 
     let mut storage = StorageEngine::default();
-    storage.run();
+    let storage_handle = storage.run();
 
-    let mut scanner = Scanner::new(extractor_tx.clone());
+    let mut scanner = Scanner::new(scanner_tx.clone(), scanner_rx, extractor_tx.clone());
     let mut filter1 = Filter::default();
     filter1.set_case_sensitive(false);
     //filter1.set_filename_contains("report");
@@ -45,16 +44,29 @@ fn main() {
         extractor_tx,
         extractor_rx,
     );
-    extractor.init(2);
+    
+    let scanner_handle = scanner.init().expect("Failed to start scanner");
+    let extractor_handles = extractor.init(16).expect("Failed to initialize extractor");
 
-    let mut classifier = Classifier::default();
-    classifier.init(1);
+    // let mut classifier = Classifier::default();
+    // let classifier_handles = classifier.init(1).expect("Failed to initialize classifier");
 
-    let _t2 = thread::spawn(move || {
-        scanner.scan_folder("/home/roothunter");
-    });
+    scanner_tx.send("/home/roothunter".to_string()).expect("Failed to send scan command");
 
-    loop {
-        thread::sleep(std::time::Duration::from_secs(10));
+    // join handles
+
+    for handle in scanner_handle {
+        handle.join().expect("Scanner thread panicked");
+        warn!(target: "main", "Scanner thread has finished");
+    }
+
+    for handle in extractor_handles {
+        handle.join().expect("Extractor thread panicked");
+        warn!(target: "main", "Extractor thread has finished");
+    }
+
+    if let Ok(handle) = storage_handle {
+        handle.join().expect("Storage thread panicked");
+        warn!(target: "main", "Storage thread has finished");
     }
 }

@@ -2,13 +2,11 @@ pub mod formats;
 pub mod tokens;
 pub mod worker;
 
-use std::{env, time::Duration};
+use std::{env, thread::JoinHandle, time::Duration};
 
 use crate::{
     engine::{
-        EngineTask, PipelineStage, Receiver, Sender,
-        extractor::worker::ExtractorWorker,
-        scanner::{ScannedDocument, Scanner},
+        EngineError, EngineTask, PipelineStage, Receiver, Sender, extractor::worker::ExtractorWorker, scanner::{ScannedDocument, Scanner}
     },
     storage::commands::StorageCommand,
 };
@@ -67,7 +65,7 @@ impl Extractor {
 }
 
 impl PipelineStage<ScannedDocument> for Extractor {
-    fn add_worker(&mut self) {
+    fn add_worker(&mut self) -> Result<JoinHandle<()>, EngineError> {
         let index = self.workers.len();
 
         info!(target: LOG_TARGET, "Starting extractor worker {}", index);
@@ -83,7 +81,8 @@ impl PipelineStage<ScannedDocument> for Extractor {
             channel_sender,
             channel_receiver,
         );
-        worker.run();
+        let handle = worker.run()?;
         self.workers.push(worker);
+        Ok(handle)
     }
 }

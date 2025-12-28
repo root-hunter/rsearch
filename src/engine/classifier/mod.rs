@@ -1,7 +1,9 @@
 pub mod worker;
 
+use std::thread::JoinHandle;
+
 use crate::{
-    engine::{EngineTask, PipelineStage, Sender, classifier::worker::ClassifierWorker},
+    engine::{EngineError, EngineTask, PipelineStage, Sender, classifier::worker::ClassifierWorker},
     entities::document::Document,
     storage::commands::StorageCommand,
 };
@@ -24,5 +26,7 @@ impl Default for Classifier {
 }
 
 impl PipelineStage<Document> for Classifier {
-    fn add_worker(&mut self) {}
+    fn add_worker(&mut self) -> Result<JoinHandle<()>, EngineError> {
+        todo!()
+    }
 }

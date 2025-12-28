@@ -59,3 +59,4 @@ DEV NOTES
 - [ ] remove all .unwrap()
 - [x] implement stream base text extractor / tokenizator algo
 - [ ] define lifecycle base component architecture (Scanner, Engines, etc)
+- [ ] fix too db call to check containers

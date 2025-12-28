@@ -1,7 +1,9 @@
+use std::thread::JoinHandle;
+
 use tracing::info;
 
 use crate::{
-    engine::{EngineTask, EngineTaskWorker, Receiver, Sender, unbounded_channel},
+    engine::{EngineError, EngineTask, EngineTaskWorker, Receiver, Sender, unbounded_channel},
     entities::document::Document,
     storage::commands::StorageCommand,
 };
@@ -14,7 +16,6 @@ pub struct ClassifierWorker {
     database_tx: Sender<StorageCommand>,
     channel_tx: Sender<Document>,
     channel_rx: Receiver<Document>,
-    pub thread_handle: Option<std::thread::JoinHandle<()>>,
 }
 
 impl ClassifierWorker {
@@ -26,7 +27,6 @@ impl ClassifierWorker {
             database_tx,
             channel_tx: tx,
             channel_rx: rx,
-            thread_handle: None,
         }
     }
 
@@ -54,7 +54,7 @@ impl EngineTask<Document> for ClassifierWorker {
         &self.channel_rx
     }
 
-    fn run(&mut self) {
+    fn run(&mut self) -> Result<JoinHandle<()>, EngineError> {
         let timeout = std::time::Duration::from_millis(200);
 
         while let Ok(document) = self.channel_rx.recv_timeout(timeout) {
@@ -65,5 +65,7 @@ impl EngineTask<Document> for ClassifierWorker {
                 document.get_id()
             );
         }
+
+        todo!()
     }
 }

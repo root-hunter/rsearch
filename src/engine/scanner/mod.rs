@@ -1,13 +1,15 @@
 pub mod filters;
 
-use std::path::Path;
+use std::{
+    path::Path,
+    thread::{self, JoinHandle},
+};
 
-use crossbeam::channel;
 use tracing::{error, info};
 
 use crate::{
     engine::{
-        Sender,
+        Receiver, Sender,
         scanner::filters::{Filter, FilterError},
     },
     entities::{
@@ -41,15 +43,23 @@ pub struct ScannedDocument {
 pub struct Scanner {
     filters: Vec<Filter>,
     filters_mode: FiltersMode,
-    channel_sender: Sender<ScannedDocument>,
+    channel_tx: Sender<String>,
+    channel_rx: Receiver<String>,
+    channel_extractor_tx: Sender<ScannedDocument>,
 }
 
 impl Scanner {
-    pub fn new(channel_sender: Sender<ScannedDocument>) -> Self {
+    pub fn new(
+        channel_tx: Sender<String>,
+        channel_rx: Receiver<String>,
+        channel_extractor_tx: Sender<ScannedDocument>,
+    ) -> Self {
         Scanner {
             filters: Vec::new(),
             filters_mode: FiltersMode::And,
-            channel_sender,
+            channel_tx,
+            channel_rx,
+            channel_extractor_tx,
         }
     }
 
@@ -88,11 +98,10 @@ impl Scanner {
     }
 
     fn process_document(&mut self, document: Document) {
-        if let Err(e) = self.channel_sender.send(ScannedDocument {
-                container_type: ContainerType::Folder, // You might want to set this appropriately
-                document: document.clone(),
-            })
-        {
+        if let Err(e) = self.channel_extractor_tx.send(ScannedDocument {
+            container_type: ContainerType::Folder, // You might want to set this appropriately
+            document: document.clone(),
+        }) {
             error!(target: LOG_TARGET, "Failed to send document to extractor: {:?}", e);
         }
     }
@@ -113,5 +122,22 @@ impl Scanner {
                 self.process_document(document);
             }
         }
+    }
+
+    pub fn init(&mut self) -> Result<Vec<JoinHandle<()>>, ScannerError> {
+        info!(target: LOG_TARGET, "Scanner is running");
+
+        let mut handles = Vec::new();
+        let mut scanner = self.clone();
+        
+        let handle = thread::spawn(move || {
+            while let Ok(path) = scanner.channel_rx.recv() {
+                scanner.scan_folder(&path);
+            }
+        });
+
+        handles.push(handle);
+
+        Ok(handles)
     }
 }

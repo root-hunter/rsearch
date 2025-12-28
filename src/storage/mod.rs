@@ -1,13 +1,13 @@
 pub mod commands;
 
-use std::{collections::HashMap, env, path::MAIN_SEPARATOR};
+use std::{collections::HashMap, env, path::MAIN_SEPARATOR, thread::JoinHandle};
 
 use once_cell::sync::Lazy;
 use rusqlite::Result;
 use tracing::{error, info, warn};
 
 use crate::{
-    engine::{EngineTask, Receiver, Sender, unbounded_channel},
+    engine::{EngineError, EngineTask, Receiver, Sender, unbounded_channel},
     entities::{
         container::{self, Container},
         document::Document,
@@ -43,7 +43,6 @@ pub enum StorageError {
 pub struct StorageEngine {
     channel_tx: Sender<StorageCommand>,
     channel_rx: Receiver<StorageCommand>,
-    thread_handle: Option<std::thread::JoinHandle<Result<(), StorageError>>>,
 }
 
 impl Default for StorageEngine {
@@ -53,7 +52,6 @@ impl Default for StorageEngine {
         Self {
             channel_tx: tx,
             channel_rx: rx,
-            thread_handle: None,
         }
     }
 }
@@ -156,15 +154,13 @@ impl EngineTask<StorageCommand> for StorageEngine {
         &self.channel_rx
     }
 
-    fn run(&mut self) {
-        assert!(self.thread_handle.is_none(), "Worker is already running");
-
+    fn run(&mut self) -> Result<JoinHandle<()>, EngineError> {
         let conn = rusqlite::Connection::open(*STORAGE_DATABASE_PATH)
             .map_err(StorageError::InitializationError);
 
         if let Err(e) = conn {
             error!(target: LOG_TARGET, "Failed to open database connection: {:?}", e);
-            return;
+            return Err(EngineError::StorageError(e));
         }
 
         let mut conn = conn.unwrap();
@@ -246,7 +242,7 @@ impl EngineTask<StorageCommand> for StorageEngine {
             }
         });
 
-        self.thread_handle = Some(handle);
+        Ok(handle)
     }
 
     fn name(&self) -> &str {

@@ -1,17 +1,14 @@
-use std::time::{Duration, Instant};
+use std::{thread::JoinHandle, time::{Duration, Instant}};
 
 use crate::{
     engine::{
-        ChannelRecvTimeoutError, EngineTask, EngineTaskWorker, Receiver, Sender,
-        extractor::{
+        ChannelRecvTimeoutError, EngineError, EngineTask, EngineTaskWorker, Receiver, Sender, extractor::{
             EXTRACTOR_FLUSH_INTERVAL, EXTRACTOR_INSERT_BATCH_SIZE, ExtractorError,
             formats::{
                 self, DataExtracted, FileExtractor, FormatType, archive::zip::ZipExtractor,
                 microsoft::docx::DocxExtractor, pdf::PdfExtractor, text::TextExtractor,
             },
-        },
-        scanner::{ScannedDocument, Scanner},
-        unbounded_channel,
+        }, scanner::{ScannedDocument, Scanner}, unbounded_channel
     },
     entities::{
         container::{Container, ContainerType},
@@ -32,7 +29,6 @@ pub struct ExtractorWorker {
     channel_rx: Receiver<ScannedDocument>,
     database_tx: Sender<StorageCommand>,
     scanner: Scanner,
-    pub thread_handle: Option<std::thread::JoinHandle<Result<(), ExtractorError>>>,
 }
 
 impl ExtractorWorker {
@@ -49,7 +45,6 @@ impl ExtractorWorker {
             scanner,
             channel_tx,
             channel_rx,
-            thread_handle: None,
         }
     }
 
@@ -101,9 +96,7 @@ impl EngineTask<ScannedDocument> for ExtractorWorker {
         &self.channel_rx
     }
 
-    fn run(&mut self) {
-        assert!(self.thread_handle.is_none(), "Worker is already running");
-
+    fn run(&mut self) -> Result<JoinHandle<()>, EngineError> {
         let receiver = self.channel_rx.clone();
         let worker_id = self.id;
 
@@ -111,7 +104,7 @@ impl EngineTask<ScannedDocument> for ExtractorWorker {
         let scanner = self.scanner.clone();
         let channel_tx = self.channel_tx.clone();
 
-        self.thread_handle = Some(std::thread::spawn(move || {
+        let handle = std::thread::spawn(move || {
             let mut buffer: Vec<ScannedDocument> = vec![];
             let mut last_flush = Instant::now();
 
@@ -258,16 +251,21 @@ impl EngineTask<ScannedDocument> for ExtractorWorker {
                 }
 
                 if buffer.len() >= *EXTRACTOR_INSERT_BATCH_SIZE {
-                    Self::flush_buffer(database_tx.clone(), &mut buffer)?;
+                    if let Err(e) = Self::flush_buffer(database_tx.clone(), &mut buffer) {
+                        error!(target: LOG_TARGET, worker_id = worker_id, "Failed to flush buffer: {:?}", e);
+                    }
                     last_flush = Instant::now();
                 }
 
                 if !buffer.is_empty() && last_flush.elapsed() >= *EXTRACTOR_FLUSH_INTERVAL {
-                    Self::flush_buffer(database_tx.clone(), &mut buffer)?;
+                    if let Err(e) = Self::flush_buffer(database_tx.clone(), &mut buffer) {
+                        error!(target: LOG_TARGET, worker_id = worker_id, "Failed to flush buffer: {:?}", e);
+                    }
                     last_flush = Instant::now();
                 }
             }
-            Ok(())
-        }));
+        });
+
+        Ok(handle)
     }
 }
