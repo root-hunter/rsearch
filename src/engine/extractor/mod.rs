@@ -1,6 +1,6 @@
 pub mod formats;
 pub mod tokens;
-pub mod worker;
+pub mod workers;
 pub mod commands;
 
 use std::{env, thread::JoinHandle, time::Duration};
@@ -8,7 +8,7 @@ use std::{env, thread::JoinHandle, time::Duration};
 use crate::{
     engine::{
         EngineError, EngineTask, PipelineStage, Receiver, Sender,
-        extractor::{commands::ExtractorCommand, worker::ExtractorWorker},
+        extractor::{commands::ExtractorCommand, workers::ExtractorWorker},
         scanner::{ScannedDocument, Scanner},
     },
     storage::StorageChannelTx,

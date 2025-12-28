@@ -1,10 +1,9 @@
-use crate::engine::scanner::ScannedDocument;
+use crate::{engine::scanner::ScannedDocument, entities::container::Container};
 
 pub enum ExtractorCommand {
     ProcessDocument(ScannedDocument),
     ProcessCompressedDocuments {
-        container: ScannedDocument,
+        container: Container,
         documents: Vec<ScannedDocument>,
     },
-    Flush,
 }
