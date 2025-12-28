@@ -235,16 +235,20 @@ impl Document {
                 DocumentError::DatabaseError(err)
             })?;
 
+            info!(target: LOG_TARGET, "Saved document: {}", document.path);
+
             let document_id = tx.last_insert_rowid();
             document.set_id(document_id);
+
+            if document.content.is_empty() && document.description.is_empty() {
+                continue;
+            }
 
             tx.execute(
                 "INSERT INTO index_documents (document_id, content, description) VALUES (?1, ?2, ?3)",
                 rusqlite::params![document_id, document.content, document.description],
             )
             .map_err(DocumentError::DatabaseError)?;
-
-            info!(target: LOG_TARGET, "Saved document: {}", document.path);
         }
 
         tx.commit().map_err(DocumentError::DatabaseError)?;
