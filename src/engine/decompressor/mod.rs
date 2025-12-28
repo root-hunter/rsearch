@@ -1,6 +1,5 @@
 use std::thread::{self, JoinHandle};
 
-use crossbeam::channel;
 use tracing::{info, warn};
 
 use crate::{
@@ -10,7 +9,7 @@ use crate::{
         scanner::ScannedDocument,
     },
     entities::container::{Container, ContainerType},
-    storage::{StorageChannelTx, StorageError, commands::StorageCommand},
+    storage::{StorageChannelTx, commands::StorageCommand},
 };
 
 pub type DecompressorChannelTx = Sender<ScannedDocument>;
@@ -53,7 +52,7 @@ impl PipelineStage for DecompressorEngine {
             while let Ok(scanned) = channel_rx.recv() {
                 let container = Container::from_document(&scanned.document, ContainerType::Archive);
 
-                let (tx, rx) = channel::unbounded();
+                let (tx, rx) = crossbeam_channel::unbounded();
 
                 channel_storage_tx
                     .send(StorageCommand::SaveArchive {

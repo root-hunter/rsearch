@@ -10,12 +10,12 @@ pub mod utils;
 
 //const LOG_TARGET: &str = "engine";
 
-pub type Sender<T> = crossbeam::channel::Sender<T>;
-pub type Receiver<T> = crossbeam::channel::Receiver<T>;
+pub type Sender<T> = crossbeam_channel::Sender<T>;
+pub type Receiver<T> = crossbeam_channel::Receiver<T>;
 pub fn unbounded_channel<T>() -> (Sender<T>, Receiver<T>) {
-    crossbeam::channel::unbounded::<T>()
+    crossbeam_channel::unbounded::<T>()
 }
-pub type ChannelRecvTimeoutError = crossbeam::channel::RecvTimeoutError;
+pub type ChannelRecvTimeoutError = crossbeam_channel::RecvTimeoutError;
 
 #[derive(Debug)]
 pub enum EngineError {

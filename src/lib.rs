@@ -11,7 +11,6 @@ pub enum RSearchError {
 
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::{
-    EnvFilter,
     fmt::{self, format},
     layer::SubscriberExt,
     util::SubscriberInitExt,
@@ -44,10 +43,7 @@ pub fn init_logging() {
         )
         .with_writer(std::io::stdout);
 
-    let filter = EnvFilter::from_default_env().add_directive("rsearch=info".parse().unwrap());
-
     tracing_subscriber::registry()
-        .with(filter)
         .with(stdout_layer)
         .with(file_layer)
         .init();

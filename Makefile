@@ -23,6 +23,9 @@ audit-check:
 deny-warnings:
 	cargo deny check
 
+tree:
+	cargo tree -d
+
 PDFIUM_ARCH=linux-x64
 
 install-pdfium:
