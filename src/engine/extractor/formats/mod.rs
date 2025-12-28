@@ -43,7 +43,7 @@ impl FromStr for FormatType {
             _ => FormatType::Unknown,
         };
 
-        Ok(format) 
+        Ok(format)
     }
 }
 

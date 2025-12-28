@@ -4,7 +4,10 @@ use once_cell::sync::Lazy;
 use pdfium_render::prelude::*;
 
 use crate::{
-    engine::extractor::{formats::{DataExtracted, FileExtractor}, tokens::TextTokensDistribution},
+    engine::extractor::{
+        formats::{DataExtracted, FileExtractor},
+        tokens::TextTokensDistribution,
+    },
     entities::document::Document,
 };
 

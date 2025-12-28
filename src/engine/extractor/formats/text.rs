@@ -1,10 +1,10 @@
-use std::{
-    fs::File,
-    io::{BufReader},
-};
+use std::{fs::File, io::BufReader};
 
 use crate::{
-    engine::extractor::{formats::{DataExtracted, FileExtractor}, tokens::TextTokensDistribution},
+    engine::extractor::{
+        formats::{DataExtracted, FileExtractor},
+        tokens::TextTokensDistribution,
+    },
     entities::document::Document,
 };
 

@@ -1,14 +1,15 @@
 pub mod formats;
-pub mod worker;
 pub mod tokens;
+pub mod worker;
 
-use std::{
-    env,
-    time::Duration,
-};
+use std::{env, time::Duration};
 
 use crate::{
-    engine::{EngineTask, PipelineStage, Sender, extractor::worker::ExtractorWorker, scanner::{ScannedDocument, Scanner}},
+    engine::{
+        EngineTask, PipelineStage, Sender,
+        extractor::worker::ExtractorWorker,
+        scanner::{ScannedDocument, Scanner},
+    },
     storage::commands::StorageCommand,
 };
 use once_cell::sync::Lazy;
@@ -54,7 +55,7 @@ impl Extractor {
         }
     }
 }
-    
+
 impl PipelineStage<ScannedDocument> for Extractor {
     fn get_channel_senders(&self) -> Vec<Sender<ScannedDocument>> {
         self.workers
@@ -71,11 +72,11 @@ impl PipelineStage<ScannedDocument> for Extractor {
 
     fn add_worker(&mut self) {
         let index = self.workers.len();
-        
+
         info!(target: LOG_TARGET, "Starting extractor worker {}", index);
 
         let database_tx = self.database_tx.clone();
-        
+
         let mut worker = ExtractorWorker::new(index, database_tx, self.scanner.clone());
         worker.run();
         self.workers.push(worker);

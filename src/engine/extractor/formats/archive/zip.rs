@@ -2,7 +2,7 @@ use tracing::info;
 
 use crate::{
     engine::{
-        extractor::formats::{DataExtracted, FileExtractor},
+        extractor::formats::DataExtracted,
         scanner::{ScannedDocument, Scanner},
     },
     entities::{

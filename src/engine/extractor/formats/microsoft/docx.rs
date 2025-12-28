@@ -1,5 +1,5 @@
-use crate::engine::extractor::tokens::TextTokensDistribution;
 use crate::engine::extractor::formats::{DataExtracted, FileExtractor};
+use crate::engine::extractor::tokens::TextTokensDistribution;
 use crate::entities::document::Document;
 
 use quick_xml::Reader;

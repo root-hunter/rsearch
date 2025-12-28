@@ -39,8 +39,11 @@ pub struct Document {
 
 impl Display for Document {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Document {{ id: {:?}, path: {}, filename: {}, extension: {:?}, status: {:?}, container_id: {:?} }}",
-            self.id, self.path, self.filename, self.extension, self.status, self.container_id)
+        write!(
+            f,
+            "Document {{ id: {:?}, path: {}, filename: {}, extension: {:?}, status: {:?}, container_id: {:?} }}",
+            self.id, self.path, self.filename, self.extension, self.status, self.container_id
+        )
     }
 }
 
@@ -225,7 +228,7 @@ impl Document {
                 rusqlite::params![document.filename, document.extension, document.get_status_str(), container_id],
             )
             .map_err(|err| {
-                if let rusqlite::Error::SqliteFailure(ref err_code, _) = err  
+                if let rusqlite::Error::SqliteFailure(ref err_code, _) = err
                     && err_code.code == rusqlite::ErrorCode::ConstraintViolation{
                     return DocumentError::ConstraintViolation;
                 }

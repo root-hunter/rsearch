@@ -1,4 +1,7 @@
-use std::{collections::HashMap, io::{BufRead, BufReader, Read}};
+use std::{
+    collections::HashMap,
+    io::{BufRead, BufReader, Read},
+};
 
 pub const MIN_TOKEN_LENGTH: usize = 3;
 

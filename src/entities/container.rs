@@ -110,7 +110,8 @@ impl Container {
 
         if let Ok(container) = stmt.query_row([path, container_type_str], |row| {
             let container_type_str: String = row.get(2)?;
-            let container_type = ContainerType::from_str(&container_type_str).expect("Invalid container type");
+            let container_type =
+                ContainerType::from_str(&container_type_str).expect("Invalid container type");
 
             Ok(Container {
                 id: row.get(0)?,
@@ -126,7 +127,8 @@ impl Container {
             [path],
             |row| {
                 let container_type_str: String = row.get(2)?;
-                let container_type = ContainerType::from_str(&container_type_str).expect("Invalid container type");
+                let container_type =
+                    ContainerType::from_str(&container_type_str).expect("Invalid container type");
 
                 Ok(Container {
                     id: row.get(0)?,
