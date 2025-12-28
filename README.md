@@ -60,3 +60,4 @@ DEV NOTES
 - [x] implement stream base text extractor / tokenizator algo
 - [ ] define lifecycle base component architecture (Scanner, Engines, etc)
 - [ ] fix too db call to check containers
+- [ ] abstract Engine and all the components (Scanner, Extractor, Classifier, Storage) via API
