@@ -25,7 +25,7 @@ impl Default for Classifier {
     }
 }
 
-impl PipelineStage<Document> for Classifier {
+impl PipelineStage for Classifier {
     fn add_worker(&mut self) -> Result<JoinHandle<()>, EngineError> {
         todo!()
     }

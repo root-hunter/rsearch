@@ -69,7 +69,7 @@ impl Extractor {
     }
 }
 
-impl PipelineStage<ScannedDocument> for Extractor {
+impl PipelineStage for Extractor {
     fn add_worker(&mut self) -> Result<JoinHandle<()>, EngineError> {
         let index = self.workers.len();
 

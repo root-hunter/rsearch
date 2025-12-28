@@ -28,7 +28,7 @@ pub struct Engine {
     pub classifier: classifier::Classifier,
 }
 
-pub trait PipelineStage<T> {
+pub trait PipelineStage {
     fn init(&mut self, num_workers: usize) -> Result<Vec<JoinHandle<()>>, EngineError> {
         let mut handles = Vec::new();
         for _ in 0..num_workers {
