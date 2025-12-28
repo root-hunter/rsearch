@@ -1,13 +1,14 @@
 pub mod formats;
 pub mod tokens;
 pub mod worker;
+pub mod commands;
 
 use std::{env, thread::JoinHandle, time::Duration};
 
 use crate::{
     engine::{
         EngineError, EngineTask, PipelineStage, Receiver, Sender,
-        extractor::worker::ExtractorWorker,
+        extractor::{commands::ExtractorCommand, worker::ExtractorWorker},
         scanner::{ScannedDocument, Scanner},
     },
     storage::StorageChannelTx,
@@ -37,15 +38,6 @@ pub enum ExtractorError {
     ExtractionFailed,
     JoinHandleError,
     IoError(std::io::Error),
-}
-
-pub enum ExtractorCommand {
-    ProcessDocument(ScannedDocument),
-    ProcessCompressedDocuments {
-        container: ScannedDocument,
-        documents: Vec<ScannedDocument>,
-    },
-    Flush,
 }
 
 pub type ExtractorChannelTx = Sender<ExtractorCommand>;

@@ -10,7 +10,7 @@ use tracing::{error, info};
 use crate::{
     engine::{
         Receiver, Sender,
-        extractor::{ExtractorChannelTx, ExtractorCommand},
+        extractor::{ExtractorChannelTx, commands::ExtractorCommand},
         scanner::filters::{Filter, FilterError},
     },
     entities::{

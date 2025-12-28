@@ -1,7 +1,7 @@
 use rsearch::{
     engine::{
         EngineTask, PipelineStage,
-        extractor::{Extractor, ExtractorCommand},
+        extractor::{Extractor, commands::ExtractorCommand},
         scanner::{FiltersMode, Scanner, filters::Filter},
         unbounded_channel,
     },
