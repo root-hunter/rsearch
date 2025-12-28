@@ -1,12 +1,6 @@
 use std::{fs::File, io::BufReader};
 
-use crate::{
-    engine::extractor::{
-        formats::{DataExtracted, FileExtractor},
-        tokens::TextTokensDistribution,
-    },
-    entities::document::Document,
-};
+use crate::{engine::extractor::formats::FileExtractor, entities::document::Document};
 
 //const LOG_TARGET: &str = "extractor_text";
 
