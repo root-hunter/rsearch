@@ -34,10 +34,6 @@ pub trait PipelineStage<T> {
         }
     }
 
-    fn get_channel_senders(&self) -> Vec<Sender<T>>;
-
-    fn get_channel_sender_at(&self, index: usize) -> Option<Sender<T>>;
-
     fn add_worker(&mut self);
 }
 

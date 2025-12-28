@@ -6,12 +6,13 @@ use std::{env, time::Duration};
 
 use crate::{
     engine::{
-        EngineTask, PipelineStage, Sender,
+        EngineTask, PipelineStage, Receiver, Sender,
         extractor::worker::ExtractorWorker,
         scanner::{ScannedDocument, Scanner},
     },
     storage::commands::StorageCommand,
 };
+use crossbeam::channel;
 use once_cell::sync::Lazy;
 use tracing::info;
 
@@ -44,40 +45,44 @@ pub struct Extractor {
     scanner: Scanner,
     database_tx: Sender<StorageCommand>,
     workers: Vec<ExtractorWorker>,
+    channel_tx: Sender<ScannedDocument>,
+    channel_rx: Receiver<ScannedDocument>,
 }
 
 impl Extractor {
-    pub fn new(database_tx: Sender<StorageCommand>, scanner: Scanner) -> Self {
+    pub fn new(
+        database_tx: Sender<StorageCommand>,
+        scanner: Scanner,
+        channel_tx: Sender<ScannedDocument>,
+        channel_rx: Receiver<ScannedDocument>,
+    ) -> Self {
         Extractor {
             scanner,
             database_tx,
             workers: Vec::new(),
+            channel_tx,
+            channel_rx,
         }
     }
 }
 
 impl PipelineStage<ScannedDocument> for Extractor {
-    fn get_channel_senders(&self) -> Vec<Sender<ScannedDocument>> {
-        self.workers
-            .iter()
-            .map(|worker| worker.get_channel_sender().clone())
-            .collect()
-    }
-
-    fn get_channel_sender_at(&self, index: usize) -> Option<Sender<ScannedDocument>> {
-        self.workers
-            .get(index)
-            .map(|worker| worker.get_channel_sender().clone())
-    }
-
     fn add_worker(&mut self) {
         let index = self.workers.len();
 
         info!(target: LOG_TARGET, "Starting extractor worker {}", index);
 
         let database_tx = self.database_tx.clone();
+        let channel_sender = self.channel_tx.clone();
+        let channel_receiver = self.channel_rx.clone();
 
-        let mut worker = ExtractorWorker::new(index, database_tx, self.scanner.clone());
+        let mut worker = ExtractorWorker::new(
+            index,
+            database_tx,
+            self.scanner.clone(),
+            channel_sender,
+            channel_receiver,
+        );
         worker.run();
         self.workers.push(worker);
     }

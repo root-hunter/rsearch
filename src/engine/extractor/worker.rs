@@ -36,15 +36,19 @@ pub struct ExtractorWorker {
 }
 
 impl ExtractorWorker {
-    pub fn new(id: usize, database_tx: Sender<StorageCommand>, scanner: Scanner) -> Self {
-        let (tx, rx) = unbounded_channel::<ScannedDocument>();
-
+    pub fn new(
+        id: usize,
+        database_tx: Sender<StorageCommand>,
+        scanner: Scanner,
+        channel_tx: Sender<ScannedDocument>,
+        channel_rx: Receiver<ScannedDocument>,
+    ) -> Self {
         ExtractorWorker {
             id,
             database_tx,
             scanner,
-            channel_tx: tx,
-            channel_rx: rx,
+            channel_tx,
+            channel_rx,
             thread_handle: None,
         }
     }

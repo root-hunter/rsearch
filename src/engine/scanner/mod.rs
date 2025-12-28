@@ -2,6 +2,7 @@ pub mod filters;
 
 use std::path::Path;
 
+use crossbeam::channel;
 use tracing::{error, info};
 
 use crate::{
@@ -40,22 +41,18 @@ pub struct ScannedDocument {
 pub struct Scanner {
     filters: Vec<Filter>,
     filters_mode: FiltersMode,
-    channels: Vec<Sender<ScannedDocument>>,
-    last_channel_index: usize,
-}
-
-impl Default for Scanner {
-    fn default() -> Self {
-        Scanner {
-            filters_mode: FiltersMode::And,
-            filters: Vec::new(),
-            channels: Vec::new(),
-            last_channel_index: 0,
-        }
-    }
+    channel_sender: Sender<ScannedDocument>,
 }
 
 impl Scanner {
+    pub fn new(channel_sender: Sender<ScannedDocument>) -> Self {
+        Scanner {
+            filters: Vec::new(),
+            filters_mode: FiltersMode::And,
+            channel_sender,
+        }
+    }
+
     pub fn check_filters(&self, path: &Path) -> bool {
         if self.filters.is_empty() {
             return true;
@@ -82,26 +79,6 @@ impl Scanner {
         }
     }
 
-    pub fn add_channel_sender(&mut self, sender: Sender<ScannedDocument>) {
-        self.channels.push(sender);
-    }
-
-    pub fn add_channel_senders(&mut self, senders: Vec<Sender<ScannedDocument>>) {
-        for sender in senders {
-            self.add_channel_sender(sender);
-        }
-    }
-
-    pub fn remove_channel_sender(&mut self, index: usize) {
-        if index < self.channels.len() {
-            self.channels.remove(index);
-        }
-    }
-
-    pub fn clear_channel_senders(&mut self) {
-        self.channels.clear();
-    }
-
     pub fn set_filters_mode(&mut self, mode: FiltersMode) {
         self.filters_mode = mode;
     }
@@ -111,17 +88,13 @@ impl Scanner {
     }
 
     fn process_document(&mut self, document: Document) {
-        let channel = self.channels.get(self.last_channel_index);
-
-        if let Some(tx) = channel.as_ref()
-            && let Err(e) = tx.send(ScannedDocument {
+        if let Err(e) = self.channel_sender.send(ScannedDocument {
                 container_type: ContainerType::Folder, // You might want to set this appropriately
                 document: document.clone(),
             })
         {
             error!(target: LOG_TARGET, "Failed to send document to extractor: {:?}", e);
         }
-        self.last_channel_index = (self.last_channel_index + 1) % self.channels.len();
     }
 
     pub fn scan_folder(&mut self, path: &str) {
