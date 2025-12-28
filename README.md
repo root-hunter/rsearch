@@ -47,3 +47,15 @@ tar -xzf pdfium-linux-x64.tgz
 DEV NOTES
 
 - 11.4 MB DB with zip and pdf search
+
+## TODO LIST
+
+- [ ] Create single thread StorageEngine to insert and query the data from and to the DB
+- [ ] Implements Classification Engine Component
+- [ ] Demonize the software
+- [ ] Create API to call command on the demon
+- [ ] Create a CLI interface that use the deamon APIs
+- [ ] Archive searching (zip, xz, ...)
+- [ ] remove all .unwrap()
+- [x] implement stream base text extractor / tokenizator algo
+- [ ] define lifecycle base component architecture (Scanner, Engines, etc)
