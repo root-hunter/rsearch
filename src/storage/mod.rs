@@ -1,4 +1,7 @@
 pub mod commands;
+pub mod constants {
+    include!(concat!(env!("OUT_DIR"), "/storage_constants.rs"));
+}
 
 use std::{collections::HashMap, env, path::MAIN_SEPARATOR, thread::JoinHandle};
 
@@ -16,17 +19,47 @@ use crate::{
 };
 
 const LOG_TARGET: &str = "storage";
-const WORKER_RECEIVE_TIMEOUT_MS: u64 = 100;
 
-const DB_JOURNAL_MODE: &str = "WAL";
-const DB_CACHE_SIZE: &str = "-2000"; // 2MB
-const DB_TEMP_STORE: &str = "MEMORY";
-const DB_LOCKING_MODE: &str = "EXCLUSIVE";
+const STORAGE_WORKER_RECEIVE_TIMEOUT_MS: Lazy<u64> = Lazy::new(|| {
+    env::var("STORAGE_WORKER_RECEIVE_TIMEOUT_MS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(constants::DEFAULT_STORAGE_WORKER_RECEIVE_TIMEOUT_MS)
+});
+
+const STORAGE_DB_JOURNAL_MODE: Lazy<&'static str> = Lazy::new(|| {
+    Box::leak(
+        env::var("STORAGE_DB_JOURNAL_MODE")
+            .unwrap_or_else(|_| constants::DEFAULT_STORAGE_DB_JOURNAL_MODE.into())
+            .into_boxed_str(),
+    )
+});
+const STORAGE_DB_CACHE_SIZE: Lazy<&'static str> = Lazy::new(|| {
+    Box::leak(
+        env::var("STORAGE_DB_CACHE_SIZE")
+            .unwrap_or_else(|_| constants::DEFAULT_STORAGE_DB_CACHE_SIZE.into())
+            .into_boxed_str(),
+    )
+});
+const STORAGE_DB_TEMP_STORE: Lazy<&'static str> = Lazy::new(|| {
+    Box::leak(
+        env::var("STORAGE_DB_TEMP_STORE")
+            .unwrap_or_else(|_| constants::DEFAULT_STORAGE_DB_TEMP_STORE.into())
+            .into_boxed_str(),
+    )
+});
+const STORAGE_DB_LOCKING_MODE: Lazy<&'static str> = Lazy::new(|| {
+    Box::leak(
+        env::var("STORAGE_DB_LOCKING_MODE")
+            .unwrap_or_else(|_| constants::DEFAULT_STORAGE_DB_LOCKING_MODE.into())
+            .into_boxed_str(),
+    )
+});
 
 pub static STORAGE_DATABASE_PATH: Lazy<&'static str> = Lazy::new(|| {
     Box::leak(
-        env::var("DATABASE_FILE")
-            .unwrap_or_else(|_| "storage.db".into())
+        env::var("STORAGE_DATABASE_PATH")
+            .unwrap_or_else(|_| constants::DEFAULT_STORAGE_DB_PATH.into())
             .into_boxed_str(),
     )
 });
@@ -68,14 +101,14 @@ impl StorageEngine {
 
         info!(target: LOG_TARGET, "Setting SQLite pragmas");
 
-        conn.pragma_update(None, "journal_mode", DB_JOURNAL_MODE)
+        conn.pragma_update(None, "journal_mode", *STORAGE_DB_JOURNAL_MODE)
             .map_err(StorageError::InitializationError)?;
 
-        conn.pragma_update(None, "cache_size", DB_CACHE_SIZE)
+        conn.pragma_update(None, "cache_size", *STORAGE_DB_CACHE_SIZE)
             .map_err(StorageError::InitializationError)?;
-        conn.pragma_update(None, "temp_store", DB_TEMP_STORE)
+        conn.pragma_update(None, "temp_store", *STORAGE_DB_TEMP_STORE)
             .map_err(StorageError::InitializationError)?;
-        conn.pragma_update(None, "locking_mode", DB_LOCKING_MODE)
+        conn.pragma_update(None, "locking_mode", *STORAGE_DB_LOCKING_MODE)
             .map_err(StorageError::InitializationError)?;
 
         info!(target: LOG_TARGET, "Creating necessary tables and indexes");
@@ -177,7 +210,7 @@ impl EngineTask<StorageChannelTx, StorageChannelRx> for StorageEngine {
 
             loop {
                 if let Ok(command) = receiver
-                    .recv_timeout(std::time::Duration::from_millis(WORKER_RECEIVE_TIMEOUT_MS))
+                    .recv_timeout(std::time::Duration::from_millis(*STORAGE_WORKER_RECEIVE_TIMEOUT_MS))
                 {
                     match command {
                         StorageCommand::SaveDocument {

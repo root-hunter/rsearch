@@ -3,7 +3,16 @@ use std::{
     io::{BufRead, BufReader, Read},
 };
 
-pub const MIN_TOKEN_LENGTH: usize = 3;
+use once_cell::sync::Lazy;
+
+use crate::engine::extractor::constants;
+
+pub static EXTRACTOR_TOKENS_MIN_LENGTH: Lazy<usize> = Lazy::new(|| {
+    std::env::var("EXTRACTOR_TOKENS_MIN_LENGTH")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(constants::DEFAULT_TOKENS_MIN_LENGTH)
+});
 
 #[derive(Debug, Clone, Default)]
 pub struct TextTokensDistribution {
@@ -13,7 +22,7 @@ pub struct TextTokensDistribution {
 impl TextTokensDistribution {
     pub fn get_tokens(line: &str) -> impl Iterator<Item = &str> {
         line.split(|c: char| !c.is_alphanumeric())
-            .filter(|t| t.len() >= MIN_TOKEN_LENGTH)
+            .filter(|t| t.len() >= *EXTRACTOR_TOKENS_MIN_LENGTH)
     }
 
     pub fn from_buffer(reader: BufReader<impl Read>) -> Self {

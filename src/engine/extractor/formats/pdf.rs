@@ -3,14 +3,14 @@ use std::{env, io::BufReader};
 use once_cell::sync::Lazy;
 use pdfium_render::prelude::*;
 
-use crate::{engine::extractor::formats::FileExtractor, entities::document::Document};
+use crate::{engine::extractor::{constants, formats::FileExtractor}, entities::document::Document};
 
 //const LOG_TARGET: &str = "extractor_pdf";
 
 pub static PDFIUM_LIB_PATH: Lazy<&'static str> = Lazy::new(|| {
     Box::leak(
         env::var("PDFIUM_LIB_PATH")
-            .unwrap_or_else(|_| "vendor/pdfium/lib/libpdfium.so".into())
+            .unwrap_or_else(|_| constants::DEFAULT_PDFIUM_LIB_PATH.into())
             .into_boxed_str(),
     )
 });

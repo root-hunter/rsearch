@@ -2,6 +2,9 @@ pub mod formats;
 pub mod tokens;
 pub mod workers;
 pub mod commands;
+pub mod constants {
+    include!(concat!(env!("OUT_DIR"), "/extractor_constants.rs"));
+}
 
 use std::{env, thread::JoinHandle, time::Duration};
 
@@ -14,7 +17,6 @@ use crate::{
     storage::StorageChannelTx,
 };
 use once_cell::sync::Lazy;
-use tracing::info;
 
 const LOG_TARGET: &str = "extractor";
 
@@ -22,15 +24,15 @@ static EXTRACTOR_INSERT_BATCH_SIZE: Lazy<usize> = Lazy::new(|| {
     env::var("EXTRACTOR_INSERT_BATCH_SIZE")
         .ok()
         .and_then(|s| s.parse().ok())
-        .unwrap_or(100)
+        .unwrap_or(constants::DEFAULT_INSERT_BATCH_SIZE)
 });
 
 static EXTRACTOR_FLUSH_INTERVAL: Lazy<Duration> = Lazy::new(|| {
     env::var("EXTRACTOR_FLUSH_INTERVAL")
         .ok()
-        .and_then(|s| s.parse::<u64>().ok()) // prova a parsare u64
+        .and_then(|s| s.parse::<u64>().ok())
         .map(Duration::from_millis)
-        .unwrap_or(Duration::from_millis(5000))
+        .unwrap_or(Duration::from_millis(constants::DEFAULT_FLUSH_INTERVAL_MS))
 });
 
 #[derive(Debug)]

@@ -1,7 +1,9 @@
 use std::{io::BufReader, str::FromStr};
 
+use once_cell::sync::Lazy;
+
 use crate::{
-    engine::{extractor::tokens::TextTokensDistribution, scanner::ScannedDocument},
+    engine::{extractor::{constants, tokens::TextTokensDistribution}, scanner::ScannedDocument},
     entities::{container::Container, document::Document},
 };
 
@@ -10,7 +12,12 @@ pub mod microsoft;
 pub mod pdf;
 pub mod text;
 
-const DEFAULT_MAX_TOKENS: usize = 500;
+static EXTRACTOR_MAX_TOKENS: Lazy<usize> = Lazy::new(|| {
+    std::env::var("EXTRACTOR_MAX_TOKENS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(constants::DEFAULT_MAX_TOKENS)
+});
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Archive {
@@ -65,7 +72,7 @@ pub trait FileExtractor {
         reader: BufReader<impl std::io::Read>,
     ) -> Result<String, Box<dyn std::error::Error>> {
         let dist = TextTokensDistribution::from_buffer(reader);
-        let content = dist.export_string_nth(DEFAULT_MAX_TOKENS);
+        let content = dist.export_string_nth(*EXTRACTOR_MAX_TOKENS);
 
         Ok(content)
     }
