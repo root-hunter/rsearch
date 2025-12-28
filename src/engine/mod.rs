@@ -1,7 +1,5 @@
 use std::thread::JoinHandle;
 
-use crossbeam::channel;
-
 use crate::storage::StorageError;
 
 pub mod classifier;

@@ -5,12 +5,14 @@ use std::{
 
 use crate::{
     engine::{
-        ChannelRecvTimeoutError, EngineError, EngineTask, EngineTaskWorker, Receiver, Sender,
+        ChannelRecvTimeoutError, EngineError, EngineTask, EngineTaskWorker,
         extractor::{
-            EXTRACTOR_FLUSH_INTERVAL, EXTRACTOR_INSERT_BATCH_SIZE, ExtractorChannelRx, ExtractorChannelTx, ExtractorCommand, ExtractorError, formats::{
+            EXTRACTOR_FLUSH_INTERVAL, EXTRACTOR_INSERT_BATCH_SIZE, ExtractorChannelRx,
+            ExtractorChannelTx, ExtractorCommand, ExtractorError,
+            formats::{
                 self, DataExtracted, FileExtractor, FormatType, archive::zip::ZipExtractor,
                 microsoft::docx::DocxExtractor, pdf::PdfExtractor, text::TextExtractor,
-            }
+            },
         },
         scanner::{ScannedDocument, Scanner},
         unbounded_channel,
@@ -115,134 +117,132 @@ impl EngineTask<ExtractorChannelTx, ExtractorChannelRx> for ExtractorWorker {
 
             loop {
                 match receiver.recv_timeout(Duration::from_millis(WORKER_RECEIVE_TIMEOUT_MS)) {
-                    Ok(mut command) => {
-                        match command {
-                            ExtractorCommand::ProcessDocument(mut scanned) => {
-                                                        info!(target: LOG_TARGET, worker_id = worker_id, "Processing document: {:?}", scanned);
+                    Ok(command) => match command {
+                        ExtractorCommand::ProcessDocument(mut scanned) => {
+                            info!(target: LOG_TARGET, worker_id = worker_id, "Processing document: {:?}", scanned);
 
-                        let document = &mut scanned.document;
-                        let document_format = document.get_format_type();
+                            let document = &mut scanned.document;
+                            let document_format = document.get_format_type();
 
-                        if scanned.container_type == ContainerType::Archive {
-                            info!(target: LOG_TARGET, worker_id = worker_id, "Extracting from archive document: {:?}", document);
-                            document.set_status(DocumentStatus::Extracted);
+                            if scanned.container_type == ContainerType::Archive {
+                                info!(target: LOG_TARGET, worker_id = worker_id, "Extracting from archive document: {:?}", document);
+                                document.set_status(DocumentStatus::Extracted);
 
-                            buffer.push(scanned);
-                            continue;
-                        }
-
-                        match document_format {
-                            FormatType::Pdf => {
-                                if let Ok(content) = PdfExtractor::extract(document.clone()) {
-                                    info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text, length: {}", content.len());
-
-                                    document.set_content(content);
-                                    document.set_status(DocumentStatus::Extracted);
-
-                                    buffer.push(scanned);
-                                } else {
-                                    error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract PDF document: {:?}", document);
-                                }
+                                buffer.push(scanned);
+                                continue;
                             }
-                            FormatType::Docx => {
-                                if let Ok(content) = DocxExtractor::extract(document.clone()) {
-                                    info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text, length: {}", content.len());
 
-                                    document.set_content(content);
-                                    document.set_status(DocumentStatus::Extracted);
+                            match document_format {
+                                FormatType::Pdf => {
+                                    if let Ok(content) = PdfExtractor::extract(document.clone()) {
+                                        info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text, length: {}", content.len());
 
-                                    buffer.push(scanned);
-                                } else {
-                                    error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract DOCX document: {:?}", document);
+                                        document.set_content(content);
+                                        document.set_status(DocumentStatus::Extracted);
+
+                                        buffer.push(scanned);
+                                    } else {
+                                        error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract PDF document: {:?}", document);
+                                    }
                                 }
-                            }
-                            FormatType::Text => {
-                                if let Ok(content) = TextExtractor::extract(document.clone()) {
-                                    info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text, length: {}", content.len());
+                                FormatType::Docx => {
+                                    if let Ok(content) = DocxExtractor::extract(document.clone()) {
+                                        info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text, length: {}", content.len());
 
-                                    document.set_content(content);
-                                    document.set_status(DocumentStatus::Extracted);
+                                        document.set_content(content);
+                                        document.set_status(DocumentStatus::Extracted);
 
-                                    buffer.push(scanned);
-                                } else {
-                                    error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract TEXT document: {:?}", document);
+                                        buffer.push(scanned);
+                                    } else {
+                                        error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract DOCX document: {:?}", document);
+                                    }
                                 }
-                            }
-                            FormatType::Archive(archive) => match archive {
-                                formats::Archive::Zip => {
-                                    let zip_extractor = ZipExtractor::new(scanner.clone());
-                                    match zip_extractor.extract(document.clone()) {
-                                        Ok(data) => match data {
-                                            DataExtracted::ArchiveDocuments {
-                                                archive,
-                                                documents,
-                                            } => {
-                                                info!(target: LOG_TARGET, worker_id = worker_id, "Extracted {} documents from ZIP archive", documents.len());
+                                FormatType::Text => {
+                                    if let Ok(content) = TextExtractor::extract(document.clone()) {
+                                        info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text, length: {}", content.len());
 
-                                                let (resp_tx, resp_rx) = unbounded_channel::<
-                                                    Result<Container, StorageError>,
-                                                >(
-                                                );
+                                        document.set_content(content);
+                                        document.set_status(DocumentStatus::Extracted);
 
-                                                database_tx
-                                                    .send(StorageCommand::SaveArchive {
-                                                        archive,
-                                                        resp_tx: Some(resp_tx),
-                                                    })
-                                                    .unwrap();
+                                        buffer.push(scanned);
+                                    } else {
+                                        error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract TEXT document: {:?}", document);
+                                    }
+                                }
+                                FormatType::Archive(archive) => match archive {
+                                    formats::Archive::Zip => {
+                                        let zip_extractor = ZipExtractor::new(scanner.clone());
+                                        match zip_extractor.extract(document.clone()) {
+                                            Ok(data) => match data {
+                                                DataExtracted::ArchiveDocuments {
+                                                    archive,
+                                                    documents,
+                                                } => {
+                                                    info!(target: LOG_TARGET, worker_id = worker_id, "Extracted {} documents from ZIP archive", documents.len());
 
-                                                match resp_rx.recv() {
-                                                    Ok(result) => match result {
-                                                        Ok(archive) => {
-                                                            info!(target: LOG_TARGET, worker_id = worker_id, "Archive saved successfully with ID: {}", archive.get_id());
+                                                    let (resp_tx, resp_rx) = unbounded_channel::<
+                                                        Result<Container, StorageError>,
+                                                    >(
+                                                    );
 
-                                                            for scanned_doc in documents {
-                                                                let mut doc = scanned_doc.document;
-                                                                doc.set_container_id(
-                                                                    archive.get_id(),
-                                                                );
+                                                    database_tx
+                                                        .send(StorageCommand::SaveArchive {
+                                                            archive,
+                                                            resp_tx: Some(resp_tx),
+                                                        })
+                                                        .unwrap();
 
-                                                                let document = ExtractorCommand::ProcessDocument(ScannedDocument {
+                                                    match resp_rx.recv() {
+                                                        Ok(result) => match result {
+                                                            Ok(archive) => {
+                                                                info!(target: LOG_TARGET, worker_id = worker_id, "Archive saved successfully with ID: {}", archive.get_id());
+
+                                                                for scanned_doc in documents {
+                                                                    let mut doc =
+                                                                        scanned_doc.document;
+                                                                    doc.set_container_id(
+                                                                        archive.get_id(),
+                                                                    );
+
+                                                                    let document = ExtractorCommand::ProcessDocument(ScannedDocument {
                                                                     container_type: scanned_doc
                                                                         .container_type,
                                                                     document: doc.clone(),
                                                                 });
 
-                                                                channel_tx
-                                                                    .send(document)
-                                                                    .unwrap();
+                                                                    channel_tx
+                                                                        .send(document)
+                                                                        .unwrap();
+                                                                }
                                                             }
-                                                        }
+                                                            Err(e) => {
+                                                                error!(target: LOG_TARGET, worker_id = worker_id, "Failed to save archive: {:?}", e);
+                                                            }
+                                                        },
                                                         Err(e) => {
-                                                            error!(target: LOG_TARGET, worker_id = worker_id, "Failed to save archive: {:?}", e);
+                                                            error!(target: LOG_TARGET, worker_id = worker_id, "Failed to receive archive save response: {:?}", e);
                                                         }
-                                                    },
-                                                    Err(e) => {
-                                                        error!(target: LOG_TARGET, worker_id = worker_id, "Failed to receive archive save response: {:?}", e);
                                                     }
                                                 }
+                                                _ => {}
+                                            },
+                                            Err(e) => {
+                                                error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract ZIP archive: {:?} ({})", e, document.get_path());
                                             }
-                                            _ => {}
-                                        },
-                                        Err(e) => {
-                                            error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract ZIP archive: {:?} ({})", e, document.get_path());
                                         }
                                     }
+                                },
+                                FormatType::Unknown => {
+                                    error!(target: LOG_TARGET, worker_id = worker_id, "Unknown document format for document: {:?}", document);
+                                    continue;
                                 }
-                            },
-                            FormatType::Unknown => {
-                                error!(target: LOG_TARGET, worker_id = worker_id, "Unknown document format for document: {:?}", document);
-                                continue;
                             }
                         }
-
-                            }
-                            _ => {
-                                warn!(target: LOG_TARGET, worker_id = worker_id, "Received unsupported command");
-                                continue;
-                            }
+                        _ => {
+                            warn!(target: LOG_TARGET, worker_id = worker_id, "Received unsupported command");
+                            continue;
                         }
-                    }
+                    },
                     Err(ChannelRecvTimeoutError::Timeout) => {
                         // Check if we need to flush the buffer
                     }

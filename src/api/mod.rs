@@ -1,4 +1,4 @@
-use crate::engine::{scanner::ScannerChannelTx};
+use crate::engine::scanner::ScannerChannelTx;
 
 pub struct Api {
     channel_scanner_tx: ScannerChannelTx,

@@ -10,7 +10,7 @@ use crate::{
         extractor::worker::ExtractorWorker,
         scanner::{ScannedDocument, Scanner},
     },
-    storage::{StorageChannelTx},
+    storage::StorageChannelTx,
 };
 use once_cell::sync::Lazy;
 use tracing::info;
@@ -41,7 +41,7 @@ pub enum ExtractorError {
 
 pub enum ExtractorCommand {
     ProcessDocument(ScannedDocument),
-    ProcessCompressedDocuments{
+    ProcessCompressedDocuments {
         container: ScannedDocument,
         documents: Vec<ScannedDocument>,
     },

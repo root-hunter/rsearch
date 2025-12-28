@@ -9,7 +9,9 @@ use tracing::{error, info};
 
 use crate::{
     engine::{
-        Receiver, Sender, extractor::{ExtractorChannelTx, ExtractorCommand}, scanner::filters::{Filter, FilterError}
+        Receiver, Sender,
+        extractor::{ExtractorChannelTx, ExtractorCommand},
+        scanner::filters::{Filter, FilterError},
     },
     entities::{
         container::ContainerType,
