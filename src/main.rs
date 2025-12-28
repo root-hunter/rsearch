@@ -2,7 +2,7 @@ use rsearch::{
     engine::{
         EngineTask, PipelineStage,
         extractor::Extractor,
-        scanner::{self, FiltersMode, ScannedDocument, Scanner, filters::Filter},
+        scanner::{FiltersMode, ScannedDocument, Scanner, filters::Filter},
         unbounded_channel,
     },
     init_logging,
