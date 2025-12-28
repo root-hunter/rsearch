@@ -51,8 +51,9 @@ fn main() {
     // let mut classifier = Classifier::default();
     // let classifier_handles = classifier.init(1).expect("Failed to initialize classifier");
 
-    scanner_tx
-        .send("/home/roothunter/Documents".to_string())
+    let api = rsearch::api::Api::new(scanner_tx.clone());
+
+    api.scan_path("/home/roothunter/Documents".to_string())
         .expect("Failed to send scan command");
 
     // join handles
