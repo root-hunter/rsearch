@@ -1,14 +1,20 @@
-use std::{thread::JoinHandle, time::{Duration, Instant}};
+use std::{
+    thread::JoinHandle,
+    time::{Duration, Instant},
+};
 
 use crate::{
     engine::{
-        ChannelRecvTimeoutError, EngineError, EngineTask, EngineTaskWorker, Receiver, Sender, extractor::{
+        ChannelRecvTimeoutError, EngineError, EngineTask, EngineTaskWorker, Receiver, Sender,
+        extractor::{
             EXTRACTOR_FLUSH_INTERVAL, EXTRACTOR_INSERT_BATCH_SIZE, ExtractorError,
             formats::{
                 self, DataExtracted, FileExtractor, FormatType, archive::zip::ZipExtractor,
                 microsoft::docx::DocxExtractor, pdf::PdfExtractor, text::TextExtractor,
             },
-        }, scanner::{ScannedDocument, Scanner}, unbounded_channel
+        },
+        scanner::{ScannedDocument, Scanner},
+        unbounded_channel,
     },
     entities::{
         container::{Container, ContainerType},

@@ -3,7 +3,9 @@ pub mod worker;
 use std::thread::JoinHandle;
 
 use crate::{
-    engine::{EngineError, EngineTask, PipelineStage, Sender, classifier::worker::ClassifierWorker},
+    engine::{
+        EngineError, EngineTask, PipelineStage, Sender, classifier::worker::ClassifierWorker,
+    },
     entities::document::Document,
     storage::commands::StorageCommand,
 };

@@ -5,10 +5,10 @@ use crossbeam::channel;
 use crate::storage::StorageError;
 
 pub mod classifier;
+pub mod decompressor;
 pub mod extractor;
 pub mod scanner;
 pub mod utils;
-pub mod decompressor;
 
 //const LOG_TARGET: &str = "engine";
 

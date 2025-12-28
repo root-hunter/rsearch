@@ -129,7 +129,7 @@ impl Scanner {
 
         let mut handles = Vec::new();
         let mut scanner = self.clone();
-        
+
         let handle = thread::spawn(move || {
             while let Ok(path) = scanner.channel_rx.recv() {
                 scanner.scan_folder(&path);

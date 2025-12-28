@@ -6,7 +6,9 @@ use std::{env, thread::JoinHandle, time::Duration};
 
 use crate::{
     engine::{
-        EngineError, EngineTask, PipelineStage, Receiver, Sender, extractor::worker::ExtractorWorker, scanner::{ScannedDocument, Scanner}
+        EngineError, EngineTask, PipelineStage, Receiver, Sender,
+        extractor::worker::ExtractorWorker,
+        scanner::{ScannedDocument, Scanner},
     },
     storage::commands::StorageCommand,
 };

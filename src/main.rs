@@ -44,14 +44,16 @@ fn main() {
         extractor_tx,
         extractor_rx,
     );
-    
+
     let scanner_handle = scanner.init().expect("Failed to start scanner");
     let extractor_handles = extractor.init(16).expect("Failed to initialize extractor");
 
     // let mut classifier = Classifier::default();
     // let classifier_handles = classifier.init(1).expect("Failed to initialize classifier");
 
-    scanner_tx.send("/home/roothunter".to_string()).expect("Failed to send scan command");
+    scanner_tx
+        .send("/home/roothunter".to_string())
+        .expect("Failed to send scan command");
 
     // join handles
 
