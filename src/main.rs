@@ -52,7 +52,7 @@ fn main() {
     // let classifier_handles = classifier.init(1).expect("Failed to initialize classifier");
 
     scanner_tx
-        .send("/home/roothunter".to_string())
+        .send("/home/roothunter/Documents".to_string())
         .expect("Failed to send scan command");
 
     // join handles

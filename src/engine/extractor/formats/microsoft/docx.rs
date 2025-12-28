@@ -1,11 +1,11 @@
-use crate::engine::extractor::formats::{DataExtracted, FileExtractor};
+use crate::engine::extractor::formats::{FileExtractor};
 use crate::engine::extractor::tokens::TextTokensDistribution;
 use crate::entities::document::Document;
 
 use quick_xml::Reader;
 use quick_xml::events::Event;
 use std::fs::File;
-use std::io::Read;
+use std::io::{BufReader, Read};
 use zip::ZipArchive;
 
 //const LOG_TARGET: &str = "extractor_docx";
@@ -14,7 +14,7 @@ use zip::ZipArchive;
 pub struct DocxExtractor;
 
 impl FileExtractor for DocxExtractor {
-    fn extract(document: Document) -> Result<DataExtracted, Box<dyn std::error::Error>> {
+    fn extract(document: Document) -> Result<String, Box<dyn std::error::Error>> {
         let file = File::open(document.get_path())?;
         let mut zip = ZipArchive::new(file)?;
 
@@ -39,10 +39,6 @@ impl FileExtractor for DocxExtractor {
             buf.clear();
         }
 
-        let reader = std::io::BufReader::new(text.as_bytes());
-        let dist = TextTokensDistribution::from_buffer(reader);
-        let text = dist.export_string_nth(500);
-
-        Ok(DataExtracted::Text(text))
+        Self::token_distribution(BufReader::new(text.as_bytes()))
     }
 }

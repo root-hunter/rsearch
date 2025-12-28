@@ -132,52 +132,37 @@ impl EngineTask<ScannedDocument> for ExtractorWorker {
 
                         match document_format {
                             FormatType::Pdf => {
-                                if let Ok(data) = PdfExtractor::extract(document.clone()) {
-                                    match data {
-                                        DataExtracted::Text(content) => {
-                                            info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text, length: {}", content.len());
+                                if let Ok(content) = PdfExtractor::extract(document.clone()) {
+                                    info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text, length: {}", content.len());
 
-                                            document.set_content(content);
-                                            document.set_status(DocumentStatus::Extracted);
+                                    document.set_content(content);
+                                    document.set_status(DocumentStatus::Extracted);
 
-                                            buffer.push(scanned);
-                                        }
-                                        _ => {}
-                                    }
+                                    buffer.push(scanned);
                                 } else {
                                     error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract PDF document: {:?}", document);
                                 }
                             }
                             FormatType::Docx => {
-                                if let Ok(data) = DocxExtractor::extract(document.clone()) {
-                                    match data {
-                                        DataExtracted::Text(content) => {
-                                            info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text, length: {}", content.len());
+                                if let Ok(content) = DocxExtractor::extract(document.clone()) {
+                                    info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text, length: {}", content.len());
 
-                                            document.set_content(content);
-                                            document.set_status(DocumentStatus::Extracted);
+                                    document.set_content(content);
+                                    document.set_status(DocumentStatus::Extracted);
 
-                                            buffer.push(scanned);
-                                        }
-                                        _ => {}
-                                    }
+                                    buffer.push(scanned);
                                 } else {
                                     error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract DOCX document: {:?}", document);
                                 }
                             }
                             FormatType::Text => {
-                                if let Ok(data) = TextExtractor::extract(document.clone()) {
-                                    match data {
-                                        DataExtracted::Text(content) => {
-                                            info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text, length: {}", content.len());
+                                if let Ok(content) = TextExtractor::extract(document.clone()) {
+                                    info!(target: LOG_TARGET, worker_id = worker_id, "Extracted text, length: {}", content.len());
 
-                                            document.set_content(content);
-                                            document.set_status(DocumentStatus::Extracted);
+                                    document.set_content(content);
+                                    document.set_status(DocumentStatus::Extracted);
 
-                                            buffer.push(scanned);
-                                        }
-                                        _ => {}
-                                    }
+                                    buffer.push(scanned);
                                 } else {
                                     error!(target: LOG_TARGET, worker_id = worker_id, "Failed to extract TEXT document: {:?}", document);
                                 }

@@ -25,7 +25,7 @@ pub static PDFIUM_LIB_PATH: Lazy<&'static str> = Lazy::new(|| {
 pub struct PdfExtractor;
 
 impl FileExtractor for PdfExtractor {
-    fn extract(document: Document) -> Result<DataExtracted, Box<dyn std::error::Error>> {
+    fn extract(document: Document) -> Result<String, Box<dyn std::error::Error>> {
         let lib = if PDFIUM_LIB_PATH.is_empty() {
             Pdfium::bind_to_system_library()?
         } else {
@@ -43,10 +43,6 @@ impl FileExtractor for PdfExtractor {
             text.push('\n');
         }
 
-        let reader = BufReader::new(text.as_bytes());
-        let dist = TextTokensDistribution::from_buffer(reader);
-        let text = dist.export_string_nth(500);
-
-        Ok(DataExtracted::Text(text))
+        Self::token_distribution(BufReader::new(text.as_bytes()))
     }
 }

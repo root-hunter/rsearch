@@ -14,13 +14,9 @@ use crate::{
 pub struct TextExtractor;
 
 impl FileExtractor for TextExtractor {
-    fn extract(document: Document) -> Result<DataExtracted, Box<dyn std::error::Error>> {
+    fn extract(document: Document) -> Result<String, Box<dyn std::error::Error>> {
         let file = File::open(document.get_path())?;
-        let reader = BufReader::new(file);
 
-        let dist = TextTokensDistribution::from_buffer(reader);
-        let content = dist.export_string_nth(200);
-
-        Ok(DataExtracted::Text(content))
+        Self::token_distribution(BufReader::new(file))
     }
 }
