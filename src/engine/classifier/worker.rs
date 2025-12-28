@@ -10,6 +10,9 @@ use crate::{
 
 const LOG_TARGET: &str = "classifier_worker";
 
+pub type ClassifierChannelTx = Sender<Document>;
+pub type ClassifierChannelRx = Receiver<Document>;
+
 #[derive(Debug)]
 pub struct ClassifierWorker {
     id: usize,
@@ -35,22 +38,22 @@ impl ClassifierWorker {
     }
 }
 
-impl EngineTaskWorker<Document> for ClassifierWorker {
+impl EngineTaskWorker<ClassifierChannelTx, ClassifierChannelRx> for ClassifierWorker {
     fn get_id(&self) -> usize {
         self.id
     }
 }
 
-impl EngineTask<Document> for ClassifierWorker {
+impl EngineTask<ClassifierChannelTx, ClassifierChannelRx> for ClassifierWorker {
     fn name(&self) -> &str {
         LOG_TARGET
     }
 
-    fn get_channel_sender(&self) -> &Sender<Document> {
+    fn get_channel_tx(&self) -> &ClassifierChannelTx {
         &self.channel_tx
     }
 
-    fn get_channel_receiver(&self) -> &Receiver<Document> {
+    fn get_channel_rx(&self) -> &ClassifierChannelRx {
         &self.channel_rx
     }
 

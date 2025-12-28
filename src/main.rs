@@ -1,8 +1,8 @@
 use rsearch::{
     engine::{
         EngineTask, PipelineStage,
-        extractor::Extractor,
-        scanner::{FiltersMode, ScannedDocument, Scanner, filters::Filter},
+        extractor::{Extractor, ExtractorCommand},
+        scanner::{FiltersMode, Scanner, filters::Filter},
         unbounded_channel,
     },
     init_logging,
@@ -15,7 +15,7 @@ fn main() {
     StorageEngine::initialize().expect("Failed to initialize storage engine");
 
     let (scanner_tx, scanner_rx) = unbounded_channel::<String>();
-    let (extractor_tx, extractor_rx) = unbounded_channel::<ScannedDocument>();
+    let (extractor_tx, extractor_rx) = unbounded_channel::<ExtractorCommand>();
 
     let mut storage = StorageEngine::default();
     let storage_handle = storage.run();
@@ -39,7 +39,7 @@ fn main() {
     scanner.add_filter(filter3);
 
     let mut extractor = Extractor::new(
-        storage.get_channel_sender().clone(),
+        storage.get_channel_tx().clone(),
         scanner.clone(),
         extractor_tx,
         extractor_rx,
@@ -55,8 +55,6 @@ fn main() {
 
     api.scan_path("/home/roothunter/Documents".to_string())
         .expect("Failed to send scan command");
-
-    // join handles
 
     for handle in scanner_handle {
         handle.join().expect("Scanner thread panicked");

@@ -7,11 +7,10 @@ use crate::{
     engine::{
         ChannelRecvTimeoutError, EngineError, EngineTask, EngineTaskWorker, Receiver, Sender,
         extractor::{
-            EXTRACTOR_FLUSH_INTERVAL, EXTRACTOR_INSERT_BATCH_SIZE, ExtractorError,
-            formats::{
+            EXTRACTOR_FLUSH_INTERVAL, EXTRACTOR_INSERT_BATCH_SIZE, ExtractorChannelRx, ExtractorChannelTx, ExtractorCommand, ExtractorError, formats::{
                 self, DataExtracted, FileExtractor, FormatType, archive::zip::ZipExtractor,
                 microsoft::docx::DocxExtractor, pdf::PdfExtractor, text::TextExtractor,
-            },
+            }
         },
         scanner::{ScannedDocument, Scanner},
         unbounded_channel,
@@ -20,9 +19,9 @@ use crate::{
         container::{Container, ContainerType},
         document::DocumentStatus,
     },
-    storage::{StorageError, commands::StorageCommand},
+    storage::{StorageChannelTx, StorageError, commands::StorageCommand},
 };
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 const LOG_TARGET: &str = "extractor_worker";
 
@@ -31,19 +30,19 @@ const WORKER_RECEIVE_TIMEOUT_MS: u64 = 200;
 #[derive(Debug)]
 pub struct ExtractorWorker {
     id: usize,
-    channel_tx: Sender<ScannedDocument>,
-    channel_rx: Receiver<ScannedDocument>,
-    database_tx: Sender<StorageCommand>,
+    channel_tx: ExtractorChannelTx,
+    channel_rx: ExtractorChannelRx,
+    database_tx: StorageChannelTx,
     scanner: Scanner,
 }
 
 impl ExtractorWorker {
     pub fn new(
         id: usize,
-        database_tx: Sender<StorageCommand>,
+        database_tx: StorageChannelTx,
         scanner: Scanner,
-        channel_tx: Sender<ScannedDocument>,
-        channel_rx: Receiver<ScannedDocument>,
+        channel_tx: ExtractorChannelTx,
+        channel_rx: ExtractorChannelRx,
     ) -> Self {
         ExtractorWorker {
             id,
@@ -54,12 +53,12 @@ impl ExtractorWorker {
         }
     }
 
-    pub fn get_database_tx(&self) -> &Sender<StorageCommand> {
+    pub fn get_database_tx(&self) -> &StorageChannelTx {
         &self.database_tx
     }
 
     pub fn flush_buffer(
-        database_tx: Sender<StorageCommand>,
+        database_tx: StorageChannelTx,
         buffer: &mut Vec<ScannedDocument>,
     ) -> Result<(), ExtractorError> {
         info!(
@@ -83,22 +82,22 @@ impl ExtractorWorker {
     }
 }
 
-impl EngineTaskWorker<ScannedDocument> for ExtractorWorker {
+impl EngineTaskWorker<ExtractorChannelTx, ExtractorChannelRx> for ExtractorWorker {
     fn get_id(&self) -> usize {
         self.id
     }
 }
 
-impl EngineTask<ScannedDocument> for ExtractorWorker {
+impl EngineTask<ExtractorChannelTx, ExtractorChannelRx> for ExtractorWorker {
     fn name(&self) -> &str {
         LOG_TARGET
     }
 
-    fn get_channel_sender(&self) -> &Sender<ScannedDocument> {
+    fn get_channel_tx(&self) -> &ExtractorChannelTx {
         &self.channel_tx
     }
 
-    fn get_channel_receiver(&self) -> &Receiver<ScannedDocument> {
+    fn get_channel_rx(&self) -> &ExtractorChannelRx {
         &self.channel_rx
     }
 
@@ -116,8 +115,10 @@ impl EngineTask<ScannedDocument> for ExtractorWorker {
 
             loop {
                 match receiver.recv_timeout(Duration::from_millis(WORKER_RECEIVE_TIMEOUT_MS)) {
-                    Ok(mut scanned) => {
-                        info!(target: LOG_TARGET, worker_id = worker_id, "Processing document: {:?}", scanned);
+                    Ok(mut command) => {
+                        match command {
+                            ExtractorCommand::ProcessDocument(mut scanned) => {
+                                                        info!(target: LOG_TARGET, worker_id = worker_id, "Processing document: {:?}", scanned);
 
                         let document = &mut scanned.document;
                         let document_format = document.get_format_type();
@@ -200,12 +201,15 @@ impl EngineTask<ScannedDocument> for ExtractorWorker {
                                                                 doc.set_container_id(
                                                                     archive.get_id(),
                                                                 );
+
+                                                                let document = ExtractorCommand::ProcessDocument(ScannedDocument {
+                                                                    container_type: scanned_doc
+                                                                        .container_type,
+                                                                    document: doc.clone(),
+                                                                });
+
                                                                 channel_tx
-                                                                    .send(ScannedDocument {
-                                                                        container_type: scanned_doc
-                                                                            .container_type,
-                                                                        document: doc,
-                                                                    })
+                                                                    .send(document)
                                                                     .unwrap();
                                                             }
                                                         }
@@ -228,6 +232,13 @@ impl EngineTask<ScannedDocument> for ExtractorWorker {
                             },
                             FormatType::Unknown => {
                                 error!(target: LOG_TARGET, worker_id = worker_id, "Unknown document format for document: {:?}", document);
+                                continue;
+                            }
+                        }
+
+                            }
+                            _ => {
+                                warn!(target: LOG_TARGET, worker_id = worker_id, "Received unsupported command");
                                 continue;
                             }
                         }

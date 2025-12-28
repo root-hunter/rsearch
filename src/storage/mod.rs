@@ -39,10 +39,13 @@ pub enum StorageError {
     DocumentError(crate::entities::document::DocumentError),
 }
 
+pub type StorageChannelTx = Sender<StorageCommand>;
+pub type StorageChannelRx = Receiver<StorageCommand>;
+
 #[derive(Debug)]
 pub struct StorageEngine {
-    channel_tx: Sender<StorageCommand>,
-    channel_rx: Receiver<StorageCommand>,
+    channel_tx: StorageChannelTx,
+    channel_rx: StorageChannelRx,
 }
 
 impl Default for StorageEngine {
@@ -145,12 +148,12 @@ impl StorageEngine {
     }
 }
 
-impl EngineTask<StorageCommand> for StorageEngine {
-    fn get_channel_sender(&self) -> &Sender<StorageCommand> {
+impl EngineTask<StorageChannelTx, StorageChannelRx> for StorageEngine {
+    fn get_channel_tx(&self) -> &StorageChannelTx {
         &self.channel_tx
     }
 
-    fn get_channel_receiver(&self) -> &Receiver<StorageCommand> {
+    fn get_channel_rx(&self) -> &StorageChannelRx {
         &self.channel_rx
     }
 

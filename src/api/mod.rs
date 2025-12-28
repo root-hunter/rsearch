@@ -1,11 +1,11 @@
-use crate::engine::Sender;
+use crate::engine::{scanner::ScannerChannelTx};
 
 pub struct Api {
-    channel_scanner_tx: Sender<String>,
+    channel_scanner_tx: ScannerChannelTx,
 }
 
 impl Api {
-    pub fn new(channel_scanner_tx: Sender<String>) -> Self {
+    pub fn new(channel_scanner_tx: ScannerChannelTx) -> Self {
         Api { channel_scanner_tx }
     }
 

@@ -9,8 +9,7 @@ use tracing::{error, info};
 
 use crate::{
     engine::{
-        Receiver, Sender,
-        scanner::filters::{Filter, FilterError},
+        Receiver, Sender, extractor::{ExtractorChannelTx, ExtractorCommand}, scanner::filters::{Filter, FilterError}
     },
     entities::{
         container::ContainerType,
@@ -39,20 +38,23 @@ pub struct ScannedDocument {
     pub document: Document,
 }
 
+pub type ScannerChannelTx = Sender<String>;
+pub type ScannerChannelRx = Receiver<String>;
+
 #[derive(Debug, Clone)]
 pub struct Scanner {
     filters: Vec<Filter>,
     filters_mode: FiltersMode,
-    channel_tx: Sender<String>,
-    channel_rx: Receiver<String>,
-    channel_extractor_tx: Sender<ScannedDocument>,
+    channel_tx: ScannerChannelTx,
+    channel_rx: ScannerChannelRx,
+    channel_extractor_tx: ExtractorChannelTx,
 }
 
 impl Scanner {
     pub fn new(
-        channel_tx: Sender<String>,
-        channel_rx: Receiver<String>,
-        channel_extractor_tx: Sender<ScannedDocument>,
+        channel_tx: ScannerChannelTx,
+        channel_rx: ScannerChannelRx,
+        channel_extractor_tx: ExtractorChannelTx,
     ) -> Self {
         Scanner {
             filters: Vec::new(),
@@ -98,10 +100,12 @@ impl Scanner {
     }
 
     fn process_document(&mut self, document: Document) {
-        if let Err(e) = self.channel_extractor_tx.send(ScannedDocument {
+        let document = ExtractorCommand::ProcessDocument(ScannedDocument {
             container_type: ContainerType::Folder, // You might want to set this appropriately
             document: document.clone(),
-        }) {
+        });
+
+        if let Err(e) = self.channel_extractor_tx.send(document) {
             error!(target: LOG_TARGET, "Failed to send document to extractor: {:?}", e);
         }
     }

@@ -10,7 +10,7 @@ use crate::{
         extractor::worker::ExtractorWorker,
         scanner::{ScannedDocument, Scanner},
     },
-    storage::commands::StorageCommand,
+    storage::{StorageChannelTx},
 };
 use once_cell::sync::Lazy;
 use tracing::info;
@@ -39,21 +39,33 @@ pub enum ExtractorError {
     IoError(std::io::Error),
 }
 
+pub enum ExtractorCommand {
+    ProcessDocument(ScannedDocument),
+    ProcessCompressedDocuments{
+        container: ScannedDocument,
+        documents: Vec<ScannedDocument>,
+    },
+    Flush,
+}
+
+pub type ExtractorChannelTx = Sender<ExtractorCommand>;
+pub type ExtractorChannelRx = Receiver<ExtractorCommand>;
+
 #[derive(Debug)]
 pub struct Extractor {
     scanner: Scanner,
-    database_tx: Sender<StorageCommand>,
+    database_tx: StorageChannelTx,
     workers: Vec<ExtractorWorker>,
-    channel_tx: Sender<ScannedDocument>,
-    channel_rx: Receiver<ScannedDocument>,
+    channel_tx: ExtractorChannelTx,
+    channel_rx: ExtractorChannelRx,
 }
 
 impl Extractor {
     pub fn new(
-        database_tx: Sender<StorageCommand>,
+        database_tx: StorageChannelTx,
         scanner: Scanner,
-        channel_tx: Sender<ScannedDocument>,
-        channel_rx: Receiver<ScannedDocument>,
+        channel_tx: ExtractorChannelTx,
+        channel_rx: ExtractorChannelRx,
     ) -> Self {
         Extractor {
             scanner,

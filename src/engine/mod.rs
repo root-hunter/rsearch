@@ -42,13 +42,13 @@ pub trait PipelineStage<T> {
     fn add_worker(&mut self) -> Result<JoinHandle<()>, EngineError>;
 }
 
-pub trait EngineTask<T> {
+pub trait EngineTask<S, R> {
     fn name(&self) -> &str;
     fn run(&mut self) -> Result<JoinHandle<()>, EngineError>;
-    fn get_channel_sender(&self) -> &channel::Sender<T>;
-    fn get_channel_receiver(&self) -> &channel::Receiver<T>;
+    fn get_channel_tx(&self) -> &S;
+    fn get_channel_rx(&self) -> &R;
 }
 
-pub trait EngineTaskWorker<T>: EngineTask<T> {
+pub trait EngineTaskWorker<S, R>: EngineTask<S, R> {
     fn get_id(&self) -> usize;
 }
