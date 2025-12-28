@@ -19,6 +19,9 @@ pub type ChannelRecvTimeoutError = crossbeam::channel::RecvTimeoutError;
 
 #[derive(Debug)]
 pub enum EngineError {
+    IoError(std::io::Error),
+    ZipError(zip::result::ZipError),
+    RusqliteError(rusqlite::Error),
     StorageError(StorageError),
     ExtractorError(extractor::ExtractorError),
 }

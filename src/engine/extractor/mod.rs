@@ -73,8 +73,6 @@ impl PipelineStage for Extractor {
     fn add_worker(&mut self) -> Result<JoinHandle<()>, EngineError> {
         let index = self.workers.len();
 
-        info!(target: LOG_TARGET, "Starting extractor worker {}", index);
-
         let database_tx = self.database_tx.clone();
         let channel_sender = self.channel_tx.clone();
         let channel_receiver = self.channel_rx.clone();

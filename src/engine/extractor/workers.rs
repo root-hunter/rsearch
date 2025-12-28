@@ -115,6 +115,8 @@ impl EngineTask<ExtractorChannelTx, ExtractorChannelRx> for ExtractorWorker {
             let mut buffer: Vec<ScannedDocument> = vec![];
             let mut last_flush = Instant::now();
 
+            info!(target: LOG_TARGET, "Starting extractor worker {}", worker_id);
+
             loop {
                 match receiver.recv_timeout(Duration::from_millis(WORKER_RECEIVE_TIMEOUT_MS)) {
                     Ok(command) => match command {

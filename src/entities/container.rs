@@ -64,6 +64,10 @@ impl Container {
         self.id
     }
 
+    pub fn get_path(&self) -> &str {
+        &self.path
+    }
+
     pub fn update_cache_from_documents(
         conn: &mut rusqlite::Connection,
         documents: &[ScannedDocument],
